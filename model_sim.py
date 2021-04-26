@@ -215,7 +215,11 @@ def pRW_me_interp_slower(xval, xp, surv_p, tau_sqd):
 def pRW_me_interp(xval, xp, surv_p, tau_sqd, phi, gamma):
     if(isinstance(xval, (int, np.int64, float))): xval=np.array([xval])
     tmp = np.zeros(xval.shape) # Store the results
-    which = (xval<820)
+    # Use the smooth process CDF values if tau_sqd<0.05
+    if tau_sqd>0.05: 
+        which = (xval<820) 
+    else: 
+        which = np.repeat(False, xval.shape)
     
     # Calculate for values that are less than 820
     if(np.sum(which)>0):
@@ -262,7 +266,11 @@ def pRW_me_interp1(xval, sp, surv_p, tau_sqd, phi, gamma):
     tmp1 = (gamma/2)**phi
     # If the asymp quantile level reaches 0.98, use the smooth distribution func.
     thresh = max(RW_quantile_asymp(0.98,phi,gamma),7.5)  # 7.5 is for gamma<0.0001
-    which = (xval<thresh)
+    # Use the smooth process CDF values if tau_sqd<0.05
+    if tau_sqd>0.05: 
+        which = (xval<thresh) 
+    else: 
+        which = np.repeat(False, xval.shape)
     
     # Calculate for values that are less than 820
     if(np.sum(which)>0):
@@ -590,8 +598,12 @@ def dRW_me_interp(xval, xp, den_p, tau_sqd, phi, gamma, log =False):
     if(isinstance(xval, (int, np.int64, float))): xval=np.array([xval])
     tmp = np.zeros(xval.size) # Store the results
     thresh_large=820
-    if(tau_sqd<1): thresh_large = 50 
-    which = (xval<thresh_large)
+    if(tau_sqd<1): thresh_large = 50
+    # Use the smooth process CDF values if tau_sqd<0.05
+    if tau_sqd>0.05: 
+        which = (xval<thresh_large) 
+    else: 
+        which = np.repeat(False, xval.shape)
     
     # Calculate for values that are less than 820
     if(np.sum(which)>0):
@@ -611,7 +623,7 @@ def dRW_me_interp(xval, xp, den_p, tau_sqd, phi, gamma, log =False):
     
     # Calculate for values that are greater than 820
     if(xval.size-np.sum(which)>0):
-        tmp[np.invert(which)] = RW_density(xval[np.invert(which)],phi,gamma,log = False)
+        tmp[np.invert(which) & (xval>0)] = RW_density(xval[np.invert(which) & (xval>0)],phi,gamma,log = False)
     
     if log:
         return np.log(tmp)
@@ -1096,33 +1108,26 @@ def loc0_gev_update_mixture_me_likelihood(data, params, Y, X_s, cen, cen_above, 
   max_support = Loc - Scale/Shape
   max_support[Shape>0] = np.inf
   
-  # When cen is not updated, the best we can do is to make sure the unifs are not too far from [below, above].
-  # tmp=pgev(Y[~cen & ~cen_above], Loc[~cen & ~cen_above], Scale[~cen & ~cen_above], Shape[~cen & ~cen_above])
+  # When cen is not updated, the best thing we can do is to make sure the unifs is not too far from [below, above].
+  tmp=pgev(Y[~cen & ~cen_above], Loc[~cen & ~cen_above], Scale[~cen & ~cen_above], Shape[~cen & ~cen_above])
   
   # If the parameters imply support that is not consistent with the data,
   # then reject the parameters.
-  # if np.any(Y > max_support) or np.min(tmp)<prob_below-0.05 or np.max(tmp)>prob_above+0.05:
-  if np.any(Y>max_support):
+  if np.any(Y > max_support) or np.min(tmp)<prob_below-0.05 or np.max(tmp)>prob_above+0.05:
       return -np.inf
   
-  tmp=pgev(Y, Loc, Scale, Shape)
-  cen_tmp = tmp < prob_below # 'cen' isn't altered in Global
-  cen_above_tmp = tmp > prob_above
-  if np.any(cen!=cen_tmp) or np.any(cen_above!=cen_above_tmp):
+  # cen = which_censored(Y, Loc, Scale, Shape, prob_below) # 'cen' isn't altered in Global
+  # cen_above = ~which_censored(Y, Loc, Scale, Shape, prob_above)
+  
+  ## What if GEV params are such that all Y's are censored?
+  if np.all(cen):
       return -np.inf
   
-  # ## What if GEV params are such that all Y's are censored?
-  # if np.all(cen):
-  #     return -np.inf
-  # un_censored_orig =  np.where(~cen & ~cen_above)[1].shape[0]
-  # un_censored_star =  np.where(~cen_tmp & ~cen_above_tmp)[1].shape[0]
-  # if un_censored_orig != un_censored_star:
-  #     return -np.inf
-  
-  X = X_update(Y, cen_tmp, cen_above_tmp, xp, surv_p, tau_sqd, phi, gamma, Loc, Scale, Shape)
-  ll = marg_transform_data_mixture_me_likelihood(Y, X, X_s, cen_tmp, cen_above_tmp, prob_below, prob_above, Loc, Scale, Shape, 
+  X = X_update(Y, cen, cen_above, xp, surv_p, tau_sqd, phi, gamma, Loc, Scale, Shape)
+  ll = marg_transform_data_mixture_me_likelihood(Y, X, X_s, cen, cen_above, prob_below, prob_above, Loc, Scale, Shape, 
                         tau_sqd, phi, gamma, xp, surv_p, den_p, thresh_X, thresh_X_above) 
   return ll
+
 
 
 ## For the slope wrt T of the location parameter

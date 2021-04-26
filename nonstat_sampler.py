@@ -217,6 +217,10 @@ if __name__ == "__main__":
        if rank==0:
            X_s[:] = np.vstack(X_s_recv).T
            X[:] = np.vstack(X_recv).T
+           # Check whether X is negative
+           if np.any(X[~cen & ~cen_above]<0):
+               sys.exit("X value abnormalty "+str(phi)+" "+str(tau_sqd))
+               
            Z[:] = np.vstack(Z_recv).T
            R[:] = R_recv
            index_within = (iter-1)%thinning
@@ -239,16 +243,16 @@ if __name__ == "__main__":
            xp = grid[:,0]; den_p = grid[:,1]; surv_p = grid[:,2]
            X_s = (R**phi)*utils.norm_to_Pareto(Z)
            
-           # # Update tau_sqd
-           # Metr_tau_sqd = sampler.static_metr(Y, tau_sqd, utils.tau_update_mixture_me_likelihood, priors.invGamma_prior, 
-           #                 hyper_params_tau_sqd, 2, 
-           #                 random_generator,
-           #                 np.nan, sigma_m['tau_sqd'], False,
-           #                 X_s, cen, cen_above, 
-           #                 prob_below, prob_above, Loc, Scale, Shape, 
-           #                 phi, gamma, xp, surv_p, den_p)
-           # tau_sqd_accept = tau_sqd_accept + Metr_tau_sqd['acc_prob']
-           # tau_sqd = Metr_tau_sqd['trace'][0,1]
+           # Update tau_sqd
+           Metr_tau_sqd = sampler.static_metr(Y, tau_sqd, utils.tau_update_mixture_me_likelihood, priors.invGamma_prior, 
+                        hyper_params_tau_sqd, 2, 
+                        random_generator,
+                        np.nan, sigma_m['tau_sqd'], False,
+                        X_s, cen, cen_above, 
+                        prob_below, prob_above, Loc, Scale, Shape, 
+                        phi, gamma, xp, surv_p, den_p)
+           tau_sqd_accept = tau_sqd_accept + Metr_tau_sqd['acc_prob']
+           tau_sqd = Metr_tau_sqd['trace'][0,1]
           
            thresh_X =  utils.qRW_me_interp(prob_below, xp, surv_p, tau_sqd, phi, gamma)
            thresh_X_above =  utils.qRW_me_interp(prob_above, xp, surv_p, tau_sqd, phi, gamma)
