@@ -137,8 +137,9 @@ if __name__ == "__main__":
    scale = Design_mat @beta_scale
    Scale = np.tile(scale, n_t)
    Scale = Scale.reshape((n_s,n_t),order='F')
-
-   shape = Design_mat @beta_shape
+   
+   Design_mat1 = np.c_[np.repeat(1,n_s), np.log(Design_mat[:,1])]
+   shape = Design_mat1 @beta_shape
    Shape = np.tile(shape, n_t)
    Shape = Shape.reshape((n_s,n_t),order='F')
     
@@ -328,7 +329,7 @@ if __name__ == "__main__":
            # beta_shape_accept = beta_shape_accept + Metr_beta_shape['acc_prob']
            # beta_shape = Metr_beta_shape['trace'][:,1]
            # beta_shape_trace_within_thinning[:,index_within] = beta_shape
-           # shape = Design_mat @beta_shape
+           # shape = Design_mat1 @beta_shape
            # Shape = np.tile(shape, n_t)
            # Shape = Shape.reshape((n_s,n_t),order='F')
           
