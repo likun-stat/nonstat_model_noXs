@@ -47,7 +47,7 @@ if __name__ == "__main__":
    comm = MPI.COMM_WORLD
    rank = comm.Get_rank()
    size = comm.Get_size()
-   thinning = 10; echo_interval = 50; n_updates = 50001
+   thinning = 10; echo_interval = 20; n_updates = 50001
   
    # Load data input
    with open('test.pkl', 'rb') as f:
@@ -73,7 +73,7 @@ if __name__ == "__main__":
    eps = 1e-6 # a small number
   
    # Hyper parameters for the prior of the mixing distribution parameters and 
-   hyper_params_phi = np.array([0.1,0.7])
+   hyper_params_phi = np.array([0.5,0.7])
    hyper_params_tau_sqd = np.array([0.1,0.1])
    hyper_params_theta_c = np.array([0, 20])
    hyper_params_theta_gev = 25
@@ -540,6 +540,7 @@ if __name__ == "__main__":
                plt.ylabel(r'Location $\mu_1$: $\beta_1$')
                plt.tight_layout()
                pdf_pages.savefig(fig)
+               plt.close()
                    
                #-page-2
                fig = plt.figure(figsize = (8.75, 11.75))
@@ -565,6 +566,7 @@ if __name__ == "__main__":
                    plt.ylabel(r'$Z$'+'['+str(i)+","+str(rank)+']')        
                plt.tight_layout()
                pdf_pages.savefig(fig)
+               plt.close()
                pdf_pages.close()                 
            else:
                with open(filename, 'wb') as f:

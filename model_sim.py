@@ -1336,9 +1336,13 @@ def Z_update_onetime(Y, X, R, Z, cen, cen_above, prob_below, prob_above,
                        cen[idx], cen_above[idx], prob_below, prob_above, Loc[idx], Scale[idx], Shape[idx], tau_sqd, phi, gamma, 
                        xp, surv_p, den_p, thresh_X, thresh_X_above) + Z_likelihood_conditional(Z, V, d);
         
-        r = np.exp(log_num - log_denom)
-        if ~np.isfinite(r):
-            r = 0
+        with np.errstate(over='raise'):
+            try:
+                r = np.exp(log_num - log_denom)  # this gets caught and handled as an exception
+            except FloatingPointError:
+                print(' -- phi='+str(phi)+", tau="+str(tau_sqd)+", idx="+str(idx)+", prop_Z="+str(temp)+", log_num="+str(log_num)+", log_denom="+str(log_denom))
+                r=0
+    
         if random_generator.uniform(0,1,1)<r:
             Z[idx] = temp  # changes argument 'X_s' directly
             X_s[idx] = prop_X_s_idx
