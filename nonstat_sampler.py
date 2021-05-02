@@ -384,8 +384,8 @@ if __name__ == "__main__":
            if rank == 0:
                sigma_m['phi'] = np.exp(np.log(sigma_m['phi']) + gamma1*(phi_accept/thinning - r_opt_1d))
                phi_accept = 0
-               # sigma_m['tau_sqd'] = np.exp(np.log(sigma_m['tau_sqd']) + gamma1*(tau_sqd_accept/thinning - r_opt_1d))
-               # tau_sqd_accept = 0
+               sigma_m['tau_sqd'] = np.exp(np.log(sigma_m['tau_sqd']) + gamma1*(tau_sqd_accept/thinning - r_opt_1d))
+               tau_sqd_accept = 0
           
                sigma_m['theta_c'] = np.exp(np.log(sigma_m['theta_c']) + gamma1*(theta_c_accept/thinning - r_opt_2d))
                theta_c_accept = 0
