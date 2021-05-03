@@ -645,7 +645,7 @@ if __name__ == "__main__":
                     dump(Y, f)
                     dump(cen, f)
                     dump(cen_above,f)
-                    dump(initial_values, f)
+                    # dump(initial_values, f)
                     dump(sigma_m, f)
                     dump(iter, f)
                     dump(Z_1t_trace, f)
