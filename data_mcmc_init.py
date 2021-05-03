@@ -221,6 +221,7 @@ if __name__ == "__main__":
     R_1t_trace[0] = R_onetime
     if rank == 0:
        print("Number of time replicates = %d"%size)
+       X_s = np.empty((n_s,n_t))
        phi_trace = np.empty(n_updates_thinned); phi_trace[:] = np.nan
        phi_trace[0] = phi
        tau_sqd_trace = np.empty(n_updates_thinned); tau_sqd_trace[:] = np.nan
