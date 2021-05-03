@@ -685,16 +685,16 @@ if __name__ == "__main__":
 # plt.plot(Coef, Lik, color='black', linestyle='solid')
 # plt.axvline(beta_loc0[0], color='r', linestyle='--');
         
-X_s = (R**phi)*utils.norm_to_Pareto(Z) 
-def test(tau_sqd):
-    return utils.tau_update_mixture_me_likelihood(Y, tau_sqd, X_s, cen, cen_above, 
-                    prob_below, prob_above, Loc, Scale, Shape, 
-                    phi, gamma, xp, surv_p, den_p)
+# X_s = (R**phi)*utils.norm_to_Pareto(Z) 
+# def test(tau_sqd):
+#     return utils.tau_update_mixture_me_likelihood(Y, tau_sqd, X_s, cen, cen_above, 
+#                     prob_below, prob_above, Loc, Scale, Shape, 
+#                     phi, gamma, xp, surv_p, den_p)
 
-Tau = np.arange(1000,2000,step=50)
-Lik = np.zeros(len(Tau))
-for idx, t in enumerate(Tau):
-    Lik[idx] = test(t) 
-plt.plot(Tau, Lik, color='black', linestyle='solid')
-plt.axvline(tau_sqd, color='r', linestyle='--');   
+# Tau = np.arange(1000,2000,step=50)
+# Lik = np.zeros(len(Tau))
+# for idx, t in enumerate(Tau):
+#     Lik[idx] = test(t) 
+# plt.plot(Tau, Lik, color='black', linestyle='solid')
+# plt.axvline(tau_sqd, color='r', linestyle='--');   
     
