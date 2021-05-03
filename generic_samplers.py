@@ -79,8 +79,8 @@ def static_metr(z, starting_theta, likelihood_fn,
                         metr_ratio = np.exp(prior_star + likelihood_star -
                                   prior - likelihood)  # this gets caught and handled as an exception
                     except FloatingPointError:
-                        print(' -- theta_star='+str(theta_star)+", likelihood_star="+str(likelihood_star)+', theta='+str(theta)+", likelihood="+str(likelihood))
-                        metr_ratio=0
+                        print('- '+likelihood_fn.__name__+': theta_star='+str(theta_star)+", likelihood_star="+str(likelihood_star)+', theta='+str(theta)+", likelihood="+str(likelihood))
+                        metr_ratio=1
                 
                 if np.isnan(metr_ratio):  metr_ratio = 0
                 
