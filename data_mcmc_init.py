@@ -78,6 +78,7 @@ if __name__ == "__main__":
         data_all = load(f)
         sigma_m = load(f)
         prop_sigma = load(f)
+        f.close()
     
     ## -------------------------------------------------------
     ##            Get the data for the local fit

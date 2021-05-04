@@ -63,6 +63,7 @@ if __name__ == "__main__":
            X_s_onetime = load(f)
            R_onetime = load(f)
            Z_onetime = load(f)
+           f.close()
    else:
        with open(input_file, 'rb') as f:
            Y = load(f)
@@ -78,6 +79,7 @@ if __name__ == "__main__":
            X_s_onetime = load(f)
            R_onetime = load(f)
            Z_onetime = load(f)
+           f.close()
    
    # Bookkeeping
    n_s = Y.shape[0]
