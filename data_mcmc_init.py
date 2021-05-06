@@ -381,15 +381,26 @@ if __name__ == "__main__":
                 d = eig_Cor[0]
                
             # Update beta_loc0
-            Metr_beta_loc0 = sampler.static_metr(Design_mat, beta_loc0, utils.loc0_gev_update_mixture_me_likelihood, 
+            # Metr_beta_loc0 = sampler.static_metr(Design_mat, beta_loc0, utils.loc0_gev_update_mixture_me_likelihood, 
+            #                    priors.unif_prior, hyper_params_theta_gev, 2,
+            #                    random_generator,
+            #                    prop_sigma['beta_loc0'], sigma_m['beta_loc0'], False, 
+            #                    Y, X_s, cen, cen_above, prob_below, prob_above, 
+            #                    tau_sqd, phi, gamma, loc1, Scale, Shape, Time, xp, surv_p, den_p, 
+            #                    thresh_X, thresh_X_above)
+            # beta_loc0_accept = beta_loc0_accept + Metr_beta_loc0['acc_prob']
+            # beta_loc0 = Metr_beta_loc0['trace'][:,1]
+            # beta_loc0_trace_within_thinning[:,index_within] = beta_loc0
+            # loc0 = Design_mat @beta_loc0
+            Metr_beta_loc0 = sampler.static_metr(Design_mat, beta_loc0[0], utils.loc0_interc_gev_update_mixture_me_likelihood, 
                                priors.unif_prior, hyper_params_theta_gev, 2,
                                random_generator,
-                               prop_sigma['beta_loc0'], sigma_m['beta_loc0'], False, 
-                               Y, X_s, cen, cen_above, prob_below, prob_above, 
+                               np.nan, sigma_m['beta_loc0'], False, 
+                               beta_loc0[1], Y, X_s, cen, cen_above, prob_below, prob_above, 
                                tau_sqd, phi, gamma, loc1, Scale, Shape, Time, xp, surv_p, den_p, 
                                thresh_X, thresh_X_above)
             beta_loc0_accept = beta_loc0_accept + Metr_beta_loc0['acc_prob']
-            beta_loc0 = Metr_beta_loc0['trace'][:,1]
+            beta_loc0 = np.array([Metr_beta_loc0['trace'][0,1],beta_loc0[1]])
             beta_loc0_trace_within_thinning[:,index_within] = beta_loc0
             loc0 = Design_mat @beta_loc0
               
@@ -409,30 +420,57 @@ if __name__ == "__main__":
             Loc = Loc.reshape((n_s,n_t),order='F')
                
             # Update beta_scale
-            Metr_beta_scale = sampler.static_metr(Design_mat, beta_scale, utils.scale_gev_update_mixture_me_likelihood, 
+            # Metr_beta_scale = sampler.static_metr(Design_mat, beta_scale, utils.scale_gev_update_mixture_me_likelihood, 
+            #                     priors.unif_prior, hyper_params_theta_gev, 2,
+            #                     random_generator,
+            #                     prop_sigma['beta_scale'], sigma_m['beta_scale'], False,
+            #                     Y, X_s, cen, cen_above, prob_below, prob_above, 
+            #                     tau_sqd, phi, gamma, Loc, Shape, Time, xp, surv_p, den_p, 
+            #                     thresh_X, thresh_X_above)
+            # beta_scale_accept = beta_scale_accept + Metr_beta_scale['acc_prob']
+            # beta_scale = Metr_beta_scale['trace'][:,1]
+            # beta_scale_trace_within_thinning[:,index_within] = beta_scale
+            # scale = Design_mat @beta_scale
+            # Scale = np.tile(scale, n_t)
+            # Scale = Scale.reshape((n_s,n_t),order='F')
+            Metr_beta_scale = sampler.static_metr(Design_mat, beta_scale[0], utils.scale_interc_gev_update_mixture_me_likelihood, 
                                 priors.unif_prior, hyper_params_theta_gev, 2,
                                 random_generator,
-                                prop_sigma['beta_scale'], sigma_m['beta_scale'], False,
-                                Y, X_s, cen, cen_above, prob_below, prob_above, 
+                                np.nan, sigma_m['beta_scale'], False,
+                                beta_scale[1], Y, X_s, cen, cen_above, prob_below, prob_above, 
                                 tau_sqd, phi, gamma, Loc, Shape, Time, xp, surv_p, den_p, 
                                 thresh_X, thresh_X_above)
             beta_scale_accept = beta_scale_accept + Metr_beta_scale['acc_prob']
-            beta_scale = Metr_beta_scale['trace'][:,1]
+            beta_scale = np.array([Metr_beta_scale['trace'][0,1],beta_scale[1]])
             beta_scale_trace_within_thinning[:,index_within] = beta_scale
             scale = Design_mat @beta_scale
             Scale = np.tile(scale, n_t)
             Scale = Scale.reshape((n_s,n_t),order='F')
               
             # Update beta_shape
-            Metr_beta_shape = sampler.static_metr(Design_mat, beta_shape, utils.shape_gev_update_mixture_me_likelihood, 
+            # Metr_beta_shape = sampler.static_metr(Design_mat, beta_shape, utils.shape_gev_update_mixture_me_likelihood, 
+            #                     priors.unif_prior, hyper_params_theta_gev, 2, 
+            #                     random_generator,
+            #                     prop_sigma['beta_shape'], sigma_m['beta_shape'], False,
+            #                     Y, X_s, cen, cen_above, prob_below, prob_above,
+            #                     tau_sqd, phi, gamma, Loc, Scale, Time, xp, surv_p, den_p, 
+            #                     thresh_X, thresh_X_above)
+            # beta_shape_accept = beta_shape_accept + Metr_beta_shape['acc_prob']
+            # beta_shape = Metr_beta_shape['trace'][:,1]
+            # beta_shape_trace_within_thinning[:,index_within] = beta_shape
+            # # shape = Design_mat1 @beta_shape
+            # shape = Design_mat @beta_shape
+            # Shape = np.tile(shape, n_t)
+            # Shape = Shape.reshape((n_s,n_t),order='F')
+            Metr_beta_shape = sampler.static_metr(Design_mat, beta_shape[0], utils.shape_interc_gev_update_mixture_me_likelihood, 
                                 priors.unif_prior, hyper_params_theta_gev, 2, 
                                 random_generator,
-                                prop_sigma['beta_shape'], sigma_m['beta_shape'], False,
-                                Y, X_s, cen, cen_above, prob_below, prob_above,
+                                np.nan, sigma_m['beta_shape'], False,
+                                beta_shape[1], Y, X_s, cen, cen_above, prob_below, prob_above,
                                 tau_sqd, phi, gamma, Loc, Scale, Time, xp, surv_p, den_p, 
                                 thresh_X, thresh_X_above)
             beta_shape_accept = beta_shape_accept + Metr_beta_shape['acc_prob']
-            beta_shape = Metr_beta_shape['trace'][:,1]
+            beta_shape = np.array([Metr_beta_shape['trace'][:,1],beta_shape[1]])
             beta_shape_trace_within_thinning[:,index_within] = beta_shape
             # shape = Design_mat1 @beta_shape
             shape = Design_mat @beta_shape
@@ -509,20 +547,22 @@ if __name__ == "__main__":
                 #         print("Oops. Proposal covariance matrix is now:\n")
                 #         print(prop_sigma['theta_c'])
                        
-                       
-                sigma_m['beta_loc0'] = np.exp(np.log(sigma_m['beta_loc0']) + gamma1*(beta_loc0_accept/thinning - r_opt_2d))
-                beta_loc0_accept = 0
-                prop_sigma['beta_loc0'] = prop_sigma['beta_loc0'] + gamma2*(np.cov(beta_loc0_trace_within_thinning) - prop_sigma['beta_loc0'])
-                check_chol_cont = True
-                while check_chol_cont:
-                    try:
-                        # Initialize prop_C
-                        np.linalg.cholesky(prop_sigma['beta_loc0'])
-                        check_chol_cont = False
-                    except  np.linalg.LinAlgError:
-                        prop_sigma['beta_loc0'] = prop_sigma['beta_loc0'] + eps*np.eye(n_covariates)
-                        print("Oops. Proposal covariance matrix is now:\n")
-                        print(prop_sigma['beta_loc0'])
+                
+                sigma_m['beta_loc0'] = np.exp(np.log(sigma_m['beta_loc0']) + gamma1*(beta_loc0_accept/thinning - r_opt_1d))
+                beta_loc0_accept = 0      
+                # sigma_m['beta_loc0'] = np.exp(np.log(sigma_m['beta_loc0']) + gamma1*(beta_loc0_accept/thinning - r_opt_2d))
+                # beta_loc0_accept = 0
+                # prop_sigma['beta_loc0'] = prop_sigma['beta_loc0'] + gamma2*(np.cov(beta_loc0_trace_within_thinning) - prop_sigma['beta_loc0'])
+                # check_chol_cont = True
+                # while check_chol_cont:
+                #     try:
+                #         # Initialize prop_C
+                #         np.linalg.cholesky(prop_sigma['beta_loc0'])
+                #         check_chol_cont = False
+                #     except  np.linalg.LinAlgError:
+                #         prop_sigma['beta_loc0'] = prop_sigma['beta_loc0'] + eps*np.eye(n_covariates)
+                #         print("Oops. Proposal covariance matrix is now:\n")
+                #         print(prop_sigma['beta_loc0'])
                 
                 # sigma_m['beta_loc1'] = np.exp(np.log(sigma_m['beta_loc1']) + gamma1*(beta_loc1_accept/thinning - r_opt_2d))
                 # beta_loc1_accept = 0
@@ -538,33 +578,37 @@ if __name__ == "__main__":
                 #         print("Oops. Proposal covariance matrix is now:\n")
                 #         print(prop_sigma['beta_loc1'])
                       
-                sigma_m['beta_scale'] = np.exp(np.log(sigma_m['beta_scale']) + gamma1*(beta_scale_accept/thinning - r_opt_2d))
+                sigma_m['beta_scale'] = np.exp(np.log(sigma_m['beta_scale']) + gamma1*(beta_scale_accept/thinning - r_opt_1d))
                 beta_scale_accept = 0
-                prop_sigma['beta_scale'] = prop_sigma['beta_scale'] + gamma2*(np.cov(beta_scale_trace_within_thinning) - prop_sigma['beta_scale'])
-                check_chol_cont = True
-                while check_chol_cont:
-                    try:
-                        # Initialize prop_C
-                        np.linalg.cholesky(prop_sigma['beta_scale'])
-                        check_chol_cont = False
-                    except  np.linalg.LinAlgError:
-                        prop_sigma['beta_scale'] = prop_sigma['beta_scale'] + eps*np.eye(n_covariates)
-                        print("Oops. Proposal covariance matrix is now:\n")
-                        print(prop_sigma['beta_scale'])
+                # sigma_m['beta_scale'] = np.exp(np.log(sigma_m['beta_scale']) + gamma1*(beta_scale_accept/thinning - r_opt_2d))
+                # beta_scale_accept = 0
+                # prop_sigma['beta_scale'] = prop_sigma['beta_scale'] + gamma2*(np.cov(beta_scale_trace_within_thinning) - prop_sigma['beta_scale'])
+                # check_chol_cont = True
+                # while check_chol_cont:
+                #     try:
+                #         # Initialize prop_C
+                #         np.linalg.cholesky(prop_sigma['beta_scale'])
+                #         check_chol_cont = False
+                #     except  np.linalg.LinAlgError:
+                #         prop_sigma['beta_scale'] = prop_sigma['beta_scale'] + eps*np.eye(n_covariates)
+                #         print("Oops. Proposal covariance matrix is now:\n")
+                #         print(prop_sigma['beta_scale'])
                      
-                sigma_m['beta_shape'] = np.exp(np.log(sigma_m['beta_shape']) + gamma1*(beta_shape_accept/thinning - r_opt_2d))
+                # sigma_m['beta_shape'] = np.exp(np.log(sigma_m['beta_shape']) + gamma1*(beta_shape_accept/thinning - r_opt_2d))
+                # beta_shape_accept = 0
+                sigma_m['beta_shape'] = np.exp(np.log(sigma_m['beta_shape']) + gamma1*(beta_shape_accept/thinning - r_opt_1d))
                 beta_shape_accept = 0
-                prop_sigma['beta_shape'] = prop_sigma['beta_shape'] + gamma2*(np.cov(beta_shape_trace_within_thinning) - prop_sigma['beta_shape'])
-                check_chol_cont = True
-                while check_chol_cont:
-                    try:
-                        # Initialize prop_C
-                        np.linalg.cholesky(prop_sigma['beta_shape'])
-                        check_chol_cont = False
-                    except  np.linalg.LinAlgError:
-                        prop_sigma['beta_shape'] = prop_sigma['beta_shape'] + eps*np.eye(n_covariates)
-                        print("Oops. Proposal covariance matrix is now:\n")
-                        print(prop_sigma['beta_shape'])
+                # prop_sigma['beta_shape'] = prop_sigma['beta_shape'] + gamma2*(np.cov(beta_shape_trace_within_thinning) - prop_sigma['beta_shape'])
+                # check_chol_cont = True
+                # while check_chol_cont:
+                #     try:
+                #         # Initialize prop_C
+                #         np.linalg.cholesky(prop_sigma['beta_shape'])
+                #         check_chol_cont = False
+                #     except  np.linalg.LinAlgError:
+                #         prop_sigma['beta_shape'] = prop_sigma['beta_shape'] + eps*np.eye(n_covariates)
+                #         print("Oops. Proposal covariance matrix is now:\n")
+                #         print(prop_sigma['beta_shape'])
               
         # ----------------------------------------------------------------------------------------                
         # -------------------------- Echo & save every 'thinning' steps --------------------------

@@ -1128,7 +1128,45 @@ def loc0_gev_update_mixture_me_likelihood(data, params, Y, X_s, cen, cen_above, 
                         tau_sqd, phi, gamma, xp, surv_p, den_p, thresh_X, thresh_X_above) 
   return ll
 
-
+def loc0_interc_gev_update_mixture_me_likelihood(data, params, beta_loc0_1, Y, X_s, cen, cen_above, prob_below, prob_above, 
+                     tau_sqd, phi, gamma, loc1, Scale, Shape, Time, xp, surv_p, den_p, 
+                     thresh_X, thresh_X_above):
+  
+  ## Design_mat = data
+  ## For the time being, assume that the intercept, slope are CONSTANTS
+  beta_loc0_0 = params
+  beta_loc0 = np.array([beta_loc0_0,beta_loc0_1])
+  loc0 = data@beta_loc0  # mu = Xb
+  
+  if len(X_s.shape)==1:
+      X_s = X_s.reshape((X_s.shape[0],1))
+  n_t = X_s.shape[1]
+  n_s = X_s.shape[0]
+  Loc = np.tile(loc0, n_t) + np.tile(loc1, n_t)*np.repeat(Time,n_s)
+  Loc = Loc.reshape((n_s,n_t),order='F')
+  
+  max_support = Loc - Scale/Shape
+  max_support[Shape>0] = np.inf
+  
+  # When cen is not updated, the best thing we can do is to make sure the unifs is not too far from [below, above].
+  tmp=pgev(Y[~cen & ~cen_above], Loc[~cen & ~cen_above], Scale[~cen & ~cen_above], Shape[~cen & ~cen_above])
+  
+  # If the parameters imply support that is not consistent with the data,
+  # then reject the parameters.
+  if np.any(Y > max_support) or np.min(tmp)<prob_below-0.05 or np.max(tmp)>prob_above+0.05:
+      return -np.inf
+  
+  # cen = which_censored(Y, Loc, Scale, Shape, prob_below) # 'cen' isn't altered in Global
+  # cen_above = ~which_censored(Y, Loc, Scale, Shape, prob_above)
+  
+  ## What if GEV params are such that all Y's are censored?
+  if np.all(cen):
+      return -np.inf
+  
+  X = X_update(Y, cen, cen_above, xp, surv_p, tau_sqd, phi, gamma, Loc, Scale, Shape)
+  ll = marg_transform_data_mixture_me_likelihood(Y, X, X_s, cen, cen_above, prob_below, prob_above, Loc, Scale, Shape, 
+                        tau_sqd, phi, gamma, xp, surv_p, den_p, thresh_X, thresh_X_above) 
+  return ll
 
 ## For the slope wrt T of the location parameter
 def loc1_gev_update_mixture_me_likelihood(data, params, Y, X_s, cen, cen_above, prob_below, prob_above, 
@@ -1226,6 +1264,49 @@ def scale_gev_update_mixture_me_likelihood(data, params, Y, X_s, cen, cen_above,
                         tau_sqd, phi, gamma, xp, surv_p, den_p, thresh_X, thresh_X_above)
   return ll
 
+
+def scale_interc_gev_update_mixture_me_likelihood(data, params, beta_scale_1, Y, X_s, cen, cen_above, prob_below, prob_above, 
+                     tau_sqd, phi, gamma, Loc, Shape, Time, xp, surv_p, den_p, 
+                     thresh_X, thresh_X_above):
+  
+  ## Design_mat = data
+  ## For the time being, assume that the intercept, slope are CONSTANTS
+  beta_scale_0 = params
+  beta_scale = np.array([beta_scale_0,beta_scale_1])
+  scale = data@beta_scale  # mu = Xb
+  if np.any(scale < 0):
+      return -np.inf
+  
+  if len(X_s.shape)==1:
+      X_s = X_s.reshape((X_s.shape[0],1))
+  n_t = X_s.shape[1]
+  n_s = X_s.shape[0]
+  Scale = np.tile(scale, n_t)
+  Scale = Scale.reshape((n_s,n_t),order='F')
+  
+  max_support = Loc - Scale/Shape
+  max_support[Shape>0] = np.inf
+  
+  # When cen is not updated, the best thing we can do is to make sure the unifs is not too far from [below, above].
+  tmp=pgev(Y[~cen & ~cen_above], Loc[~cen & ~cen_above], Scale[~cen & ~cen_above], Shape[~cen & ~cen_above])
+  
+  # If the parameters imply support that is not consistent with the data,
+  # then reject the parameters.
+  if np.any(Y > max_support) or np.min(tmp)<prob_below-0.05 or np.max(tmp)>prob_above+0.05:
+      return -np.inf
+  
+  # cen = which_censored(Y, Loc, Scale, Shape, prob_below) # 'cen' isn't altered in Global
+  # cen_above = ~which_censored(Y, Loc, Scale, Shape, prob_above)
+
+  ## What if GEV params are such that all Y's are censored?
+  if(np.all(cen)):
+      return -np.inf
+  
+  X = X_update(Y, cen, cen_above, xp, surv_p, tau_sqd, phi, gamma, Loc, Scale, Shape)
+  ll = marg_transform_data_mixture_me_likelihood(Y, X, X_s, cen, cen_above, prob_below, prob_above, Loc, Scale, Shape, 
+                        tau_sqd, phi, gamma, xp, surv_p, den_p, thresh_X, thresh_X_above)
+  return ll
+
 ##
 ## -------------------------------------------------------------------------- ##
 
@@ -1253,6 +1334,47 @@ def shape_gev_update_mixture_me_likelihood(data, params, Y, X_s, cen, cen_above,
   ## Design_mat = data
   ## For the time being, assume that the intercept, slope are CONSTANTS
   beta_shape = params
+  shape = data@beta_shape  # mu = Xb
+  
+  if len(X_s.shape)==1:
+      X_s = X_s.reshape((X_s.shape[0],1))
+  n_t = X_s.shape[1]
+  n_s = X_s.shape[0]
+  Shape = np.tile(shape, n_t)
+  Shape = Shape.reshape((n_s,n_t),order='F')
+  
+  max_support = Loc - Scale/Shape
+  max_support[Shape>0] = np.inf
+  
+  # When cen is not updated, the best thing we can do is to make sure the unifs is not too far from [below, above].
+  tmp=pgev(Y[~cen & ~cen_above], Loc[~cen & ~cen_above], Scale[~cen & ~cen_above], Shape[~cen & ~cen_above])
+  
+  # If the parameters imply support that is not consistent with the data,
+  # then reject the parameters.
+  if np.any(Y > max_support) or np.min(tmp)<prob_below-0.05 or np.max(tmp)>prob_above+0.05:
+      return -np.inf
+  
+  # cen = which_censored(Y, Loc, Scale, Shape, prob_below) # 'cen' isn't altered in Global
+  # cen_above = ~which_censored(Y, Loc, Scale, Shape, prob_above)
+
+  ## What if GEV params are such that all Y's are censored?
+  if(np.all(cen)):
+      return -np.inf
+  
+  X = X_update(Y, cen, cen_above, xp, surv_p, tau_sqd, phi, gamma, Loc, Scale, Shape)
+  ll = marg_transform_data_mixture_me_likelihood(Y, X, X_s, cen, cen_above, prob_below, prob_above, Loc, Scale, Shape, 
+                        tau_sqd, phi, gamma, xp, surv_p, den_p, thresh_X, thresh_X_above)
+  return ll
+
+
+def shape_interc_gev_update_mixture_me_likelihood(data, params, beta_shape_1, Y, X_s, cen, cen_above, prob_below, prob_above,
+                     tau_sqd, phi, gamma, Loc, Scale, Time, xp, surv_p, den_p, 
+                     thresh_X, thresh_X_above):
+  
+  ## Design_mat = data
+  ## For the time being, assume that the intercept, slope are CONSTANTS
+  beta_shape_0 = params
+  beta_shape = np.array([beta_shape_0,beta_shape_1])
   shape = data@beta_shape  # mu = Xb
   
   if len(X_s.shape)==1:
