@@ -1389,6 +1389,26 @@ def theta_c_update_mixture_me_likelihood(data, params, S, V=np.nan, d=np.nan):
     ll[idx] = Z_likelihood_conditional(Z[:,idx], V, d)
   return np.sum(ll)
 
+def range_update_mixture_me_likelihood(data, params, nu, S, V=np.nan, d=np.nan):
+  Z = data
+  range = params
+  
+  if len(Z.shape)==1:
+      Z = Z.reshape((Z.shape[0],1))
+  n_t = Z.shape[1]
+  
+  if np.any(np.isnan(V)):
+    Cor = corr_fn(S, np.array([range,nu]))
+    eig_Cor = np.linalg.eigh(Cor) #For symmetric matrices
+    V = eig_Cor[1]
+    d = eig_Cor[0]
+
+  ll = np.empty(n_t)
+  ll[:]=np.nan
+  for idx in np.arange(n_t):
+    ll[idx] = Z_likelihood_conditional(Z[:,idx], V, d)
+  return np.sum(ll)
+
 ##
 ## -------------------------------------------------------------------------- ##
 

@@ -142,11 +142,11 @@ if __name__ == "__main__":
     sigma_m['Z_onetime'] = sigma_m['Z_onetime'][:n_s]
     
     
-    plt.scatter(data_all['Stations'][:,0], data_all['Stations'][:,1],c=data_all['phi_vec'], marker='o', alpha=0.5, cmap='jet')
-    plt.colorbar()
+    # plt.scatter(data_all['Stations'][:,0], data_all['Stations'][:,1],c=data_all['phi_vec'], marker='o', alpha=0.5, cmap='jet')
+    # plt.colorbar()
     
-    plt.scatter(data_all['Stations'][:,0], data_all['Stations'][:,1],c=data_all['range_vec'], marker='o', alpha=0.5, cmap='jet')
-    plt.colorbar()
+    # plt.scatter(data_all['Stations'][:,0], data_all['Stations'][:,1],c=data_all['range_vec'], marker='o', alpha=0.5, cmap='jet')
+    # plt.colorbar()
     
     ## -------------------------------------------------------
     ##                  Set initial values
@@ -357,13 +357,21 @@ if __name__ == "__main__":
     
                
             # Update theta_c
-            Metr_theta_c = sampler.static_metr(Z, theta_c, utils.theta_c_update_mixture_me_likelihood, 
-                              priors.interval_unif_multi, hyper_params_theta_c, 2,
+            # Metr_theta_c = sampler.static_metr(Z, theta_c, utils.theta_c_update_mixture_me_likelihood, 
+            #                   priors.interval_unif_multi, hyper_params_theta_c, 2,
+            #                   random_generator,
+            #                   prop_sigma['theta_c'], sigma_m['theta_c'], False,
+            #                   Dist)
+            # theta_c_accept = theta_c_accept + Metr_theta_c['acc_prob']
+            # theta_c = Metr_theta_c['trace'][:,1]
+            # theta_c_trace_within_thinning[:,index_within] = theta_c
+            Metr_theta_c = sampler.static_metr(Z, theta_c[0], utils.range_update_mixture_me_likelihood, 
+                              priors.interval_unif, hyper_params_theta_c, 2,
                               random_generator,
-                              prop_sigma['theta_c'], sigma_m['theta_c'], False,
-                              Dist)
+                              np.nan, sigma_m['range'], False,
+                              theta_c[1],Dist)
             theta_c_accept = theta_c_accept + Metr_theta_c['acc_prob']
-            theta_c = Metr_theta_c['trace'][:,1]
+            theta_c = np.array([Metr_theta_c['trace'][0,1],theta_c[1]])
             theta_c_trace_within_thinning[:,index_within] = theta_c
               
             if Metr_theta_c['acc_prob']>0:
@@ -415,20 +423,21 @@ if __name__ == "__main__":
             Scale = np.tile(scale, n_t)
             Scale = Scale.reshape((n_s,n_t),order='F')
               
-            # # Update beta_shape
-            # Metr_beta_shape = sampler.static_metr(Design_mat, beta_shape, utils.shape_gev_update_mixture_me_likelihood, 
-            #                    priors.unif_prior, hyper_params_theta_gev, 2, 
-            #                    random_generator,
-            #                    prop_sigma['beta_shape'], sigma_m['beta_shape'], False,
-            #                    Y, X_s, cen, cen_above, prob_below, prob_above,
-            #                    tau_sqd, phi, gamma, Loc, Scale, Time, xp, surv_p, den_p, 
-            #                    thresh_X, thresh_X_above)
-            # beta_shape_accept = beta_shape_accept + Metr_beta_shape['acc_prob']
-            # beta_shape = Metr_beta_shape['trace'][:,1]
-            # beta_shape_trace_within_thinning[:,index_within] = beta_shape
+            # Update beta_shape
+            Metr_beta_shape = sampler.static_metr(Design_mat, beta_shape, utils.shape_gev_update_mixture_me_likelihood, 
+                                priors.unif_prior, hyper_params_theta_gev, 2, 
+                                random_generator,
+                                prop_sigma['beta_shape'], sigma_m['beta_shape'], False,
+                                Y, X_s, cen, cen_above, prob_below, prob_above,
+                                tau_sqd, phi, gamma, Loc, Scale, Time, xp, surv_p, den_p, 
+                                thresh_X, thresh_X_above)
+            beta_shape_accept = beta_shape_accept + Metr_beta_shape['acc_prob']
+            beta_shape = Metr_beta_shape['trace'][:,1]
+            beta_shape_trace_within_thinning[:,index_within] = beta_shape
             # shape = Design_mat1 @beta_shape
-            # Shape = np.tile(shape, n_t)
-            # Shape = Shape.reshape((n_s,n_t),order='F')
+            shape = Design_mat @beta_shape
+            Shape = np.tile(shape, n_t)
+            Shape = Shape.reshape((n_s,n_t),order='F')
               
             # cen[:] = utils.which_censored(Y, Loc, Scale, Shape, prob_below)
             # cen_above[:] = ~utils.which_censored(Y, Loc, Scale, Shape, prob_above)
@@ -484,19 +493,21 @@ if __name__ == "__main__":
                 sigma_m['tau_sqd'] = np.exp(np.log(sigma_m['tau_sqd']) + gamma1*(tau_sqd_accept/thinning - r_opt_1d))
                 tau_sqd_accept = 0
               
-                sigma_m['theta_c'] = np.exp(np.log(sigma_m['theta_c']) + gamma1*(theta_c_accept/thinning - r_opt_2d))
+                sigma_m['range'] = np.exp(np.log(sigma_m['range']) + gamma1*(theta_c_accept/thinning - r_opt_1d))
                 theta_c_accept = 0
-                prop_sigma['theta_c'] = prop_sigma['theta_c'] + gamma2*(np.cov(theta_c_trace_within_thinning) - prop_sigma['theta_c'])
-                check_chol_cont = True
-                while check_chol_cont:
-                    try:
-                        # Initialize prop_C
-                        np.linalg.cholesky(prop_sigma['theta_c'])
-                        check_chol_cont = False
-                    except  np.linalg.LinAlgError:
-                        prop_sigma['theta_c'] = prop_sigma['theta_c'] + eps*np.eye(2)
-                        print("Oops. Proposal covariance matrix is now:\n")
-                        print(prop_sigma['theta_c'])
+                # sigma_m['theta_c'] = np.exp(np.log(sigma_m['theta_c']) + gamma1*(theta_c_accept/thinning - r_opt_2d))
+                # theta_c_accept = 0
+                # prop_sigma['theta_c'] = prop_sigma['theta_c'] + gamma2*(np.cov(theta_c_trace_within_thinning) - prop_sigma['theta_c'])
+                # check_chol_cont = True
+                # while check_chol_cont:
+                #     try:
+                #         # Initialize prop_C
+                #         np.linalg.cholesky(prop_sigma['theta_c'])
+                #         check_chol_cont = False
+                #     except  np.linalg.LinAlgError:
+                #         prop_sigma['theta_c'] = prop_sigma['theta_c'] + eps*np.eye(2)
+                #         print("Oops. Proposal covariance matrix is now:\n")
+                #         print(prop_sigma['theta_c'])
                        
                        
                 sigma_m['beta_loc0'] = np.exp(np.log(sigma_m['beta_loc0']) + gamma1*(beta_loc0_accept/thinning - r_opt_2d))
@@ -541,19 +552,19 @@ if __name__ == "__main__":
                         print("Oops. Proposal covariance matrix is now:\n")
                         print(prop_sigma['beta_scale'])
                      
-                # sigma_m['beta_shape'] = np.exp(np.log(sigma_m['beta_shape']) + gamma1*(beta_shape_accept/thinning - r_opt_2d))
-                # beta_shape_accept = 0
-                # prop_sigma['beta_shape'] = prop_sigma['beta_shape'] + gamma2*(np.cov(beta_shape_trace_within_thinning) - prop_sigma['beta_shape'])
-                # check_chol_cont = True
-                # while check_chol_cont:
-                #     try:
-                #         # Initialize prop_C
-                #         np.linalg.cholesky(prop_sigma['beta_shape'])
-                #         check_chol_cont = False
-                #     except  np.linalg.LinAlgError:
-                #         prop_sigma['beta_shape'] = prop_sigma['beta_shape'] + eps*np.eye(n_covariates)
-                #         print("Oops. Proposal covariance matrix is now:\n")
-                #         print(prop_sigma['beta_shape'])
+                sigma_m['beta_shape'] = np.exp(np.log(sigma_m['beta_shape']) + gamma1*(beta_shape_accept/thinning - r_opt_2d))
+                beta_shape_accept = 0
+                prop_sigma['beta_shape'] = prop_sigma['beta_shape'] + gamma2*(np.cov(beta_shape_trace_within_thinning) - prop_sigma['beta_shape'])
+                check_chol_cont = True
+                while check_chol_cont:
+                    try:
+                        # Initialize prop_C
+                        np.linalg.cholesky(prop_sigma['beta_shape'])
+                        check_chol_cont = False
+                    except  np.linalg.LinAlgError:
+                        prop_sigma['beta_shape'] = prop_sigma['beta_shape'] + eps*np.eye(n_covariates)
+                        print("Oops. Proposal covariance matrix is now:\n")
+                        print(prop_sigma['beta_shape'])
               
         # ----------------------------------------------------------------------------------------                
         # -------------------------- Echo & save every 'thinning' steps --------------------------
@@ -752,7 +763,7 @@ if __name__ == "__main__":
 # def test(x):
 #     return utils.theta_c_update_mixture_me_likelihood(Z, np.array([range,x]), Dist)
 
-# Nu = np.arange(0.9,1.8,step=0.01)
+# Nu = np.arange(0.1,1.8,step=0.01)
 # Lik = np.zeros(len(Nu))
 # for idx, r in enumerate(Nu):
 #     Lik[idx] = test(r) 
