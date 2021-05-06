@@ -393,7 +393,7 @@ if __name__ == "__main__":
             # beta_loc0_trace_within_thinning[:,index_within] = beta_loc0
             # loc0 = Design_mat @beta_loc0
             Metr_beta_loc0 = sampler.static_metr(Design_mat, beta_loc0[0], utils.loc0_interc_gev_update_mixture_me_likelihood, 
-                               priors.unif_prior, hyper_params_theta_gev, 2,
+                               priors.unif_prior_1dim, hyper_params_theta_gev, 2,
                                random_generator,
                                np.nan, sigma_m['beta_loc0'], False, 
                                beta_loc0[1], Y, X_s, cen, cen_above, prob_below, prob_above, 
@@ -434,7 +434,7 @@ if __name__ == "__main__":
             # Scale = np.tile(scale, n_t)
             # Scale = Scale.reshape((n_s,n_t),order='F')
             Metr_beta_scale = sampler.static_metr(Design_mat, beta_scale[0], utils.scale_interc_gev_update_mixture_me_likelihood, 
-                                priors.unif_prior, hyper_params_theta_gev, 2,
+                                priors.unif_prior_1dim, hyper_params_theta_gev, 2,
                                 random_generator,
                                 np.nan, sigma_m['beta_scale'], False,
                                 beta_scale[1], Y, X_s, cen, cen_above, prob_below, prob_above, 
@@ -463,7 +463,7 @@ if __name__ == "__main__":
             # Shape = np.tile(shape, n_t)
             # Shape = Shape.reshape((n_s,n_t),order='F')
             Metr_beta_shape = sampler.static_metr(Design_mat, beta_shape[0], utils.shape_interc_gev_update_mixture_me_likelihood, 
-                                priors.unif_prior, hyper_params_theta_gev, 2, 
+                                priors.unif_prior_1dim, hyper_params_theta_gev, 2, 
                                 random_generator,
                                 np.nan, sigma_m['beta_shape'], False,
                                 beta_shape[1], Y, X_s, cen, cen_above, prob_below, prob_above,

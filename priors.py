@@ -22,11 +22,15 @@ def interval_unif_multi(params, hyper_params):
       return 0
 
 def unif_prior(params, hyper_params):
-  if type(params).__module__!='numpy' or isinstance(params, np.float64):
-        params = np.array([params])
   if any(np.abs(params)>hyper_params): 
         return -np.inf
   else: 
+      return 0
+      
+def unif_prior_1dim(params, hyper_params):
+  if np.abs(params)>hyper_params:
+        return -np.inf
+  else:
       return 0
   
 ##     
