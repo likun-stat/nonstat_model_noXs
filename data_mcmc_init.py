@@ -49,6 +49,24 @@ if __name__ == "__main__":
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.Get_size()
+    
+    ## ---------------------------------------------------------------------------
+    ##            Automatically make a directory for the new simulation
+    ## ---------------------------------------------------------------------------
+    run = 1
+    save_directory = "Simulation_"+str(run)
+    if rank==0:
+        dirs = os.listdir()
+        while save_directory in dirs:
+            run+=1
+            save_directory = "Simulation_"+str(run)
+        os.mkdir(save_directory)
+    run = comm.bcast(run,root=0)
+    save_directory = "Simulation_"+str(run)   
+    
+    ## -------------------------------------------------------
+    ##                     General setup
+    ## -------------------------------------------------------
     # size=64;rank=0
     thinning = 10; echo_interval = 20; n_updates = 50001
       
@@ -71,7 +89,8 @@ if __name__ == "__main__":
     # hyper_params_range = np.array([0.5,1.5]) # in case where roughness is not updated
       
     # Load simulated data
-    with open('data_sim.pkl', 'rb') as f:
+    data_filename = 'data_sim'+str(run)+'.pkl'
+    with open(data_filename, 'rb') as f:
         Y_all = load(f)
         cen_all = load(f)
         cen_above_all = load(f)
@@ -87,7 +106,7 @@ if __name__ == "__main__":
     radius = data_all['radius']
     
     # Filename for storing the intermediate results
-    filename='./local_'+str(local_fit_no)+'_progress_'+str(rank)+'.pkl'
+    filename = './'+save_directory + '/local_' + str(local_fit_no) + '_progress_' + str(rank) + '.pkl'
     
     # Subset the stations within radius of the knot_of_interest
     knot_of_interest = data_all['Knots'][local_fit_no,:]
@@ -123,15 +142,21 @@ if __name__ == "__main__":
     sigma_m['Z_onetime'] = sigma_m['Z_onetime'][:n_s]
     
     
+    plt.scatter(data_all['Stations'][:,0], data_all['Stations'][:,1],c=data_all['phi_vec'], marker='o', alpha=0.5, cmap='jet')
+    plt.colorbar()
+    
+    plt.scatter(data_all['Stations'][:,0], data_all['Stations'][:,1],c=data_all['range_vec'], marker='o', alpha=0.5, cmap='jet')
+    plt.colorbar()
+    
     ## -------------------------------------------------------
     ##                  Set initial values
     ## -------------------------------------------------------
-    phi = data_all['phi_vec'][local_fit_no]
+    phi = data_all['phi_at_knots'][local_fit_no]
     gamma = data_all['gamma']
     tau_sqd = data_all['tau_sqd']
     prob_below = data_all['prob_below']
     prob_above = data_all['prob_above']
-    range = data_all['range_vec'][local_fit_no]
+    range = data_all['range_at_knots'][local_fit_no]
     nu = data_all['nu']
     
     # 1. For current values of phi and gamma, obtain grids of survival probs and densities
@@ -583,7 +608,7 @@ if __name__ == "__main__":
                     f.close()
                        
                 # Echo trace plots
-                pdf_pages = PdfPages('./progress.pdf')
+                pdf_pages = PdfPages('./'+save_directory+'/progress.pdf')
                 grid_size = (4,2)
                 #-page-1
                 fig = plt.figure(figsize = (8.75, 11.75))
@@ -675,8 +700,8 @@ if __name__ == "__main__":
 # X_s = (R**phi)*utils.norm_to_Pareto(Z)
 # def test(x):
 #     return utils.loc0_gev_update_mixture_me_likelihood(Design_mat, np.array([x,beta_loc0[1]]), Y, X_s, cen, cen_above, prob_below, prob_above, 
-#                      tau_sqd, phi, gamma, loc1, Scale, Shape, Time, xp, surv_p, den_p, 
-#                      thresh_X, thresh_X_above)
+#                       tau_sqd, phi, gamma, loc1, Scale, Shape, Time, xp, surv_p, den_p, 
+#                       thresh_X, thresh_X_above)
 
 
 # Coef = np.arange(beta_loc0[0]-0.5,beta_loc0[0]+1,step=0.01)
@@ -685,6 +710,21 @@ if __name__ == "__main__":
 #     Lik[idx] = test(coef)
 # plt.plot(Coef, Lik, color='black', linestyle='solid')
 # plt.axvline(beta_loc0[0], color='r', linestyle='--');
+
+
+# def test(x):
+#     return utils.loc0_gev_update_mixture_me_likelihood(Design_mat, np.array([beta_loc0[0],x]), Y, X_s, cen, cen_above, prob_below, prob_above, 
+#                       tau_sqd, phi, gamma, loc1, Scale, Shape, Time, xp, surv_p, den_p, 
+#                       thresh_X, thresh_X_above)
+
+
+# Coef = np.arange(beta_loc0[1]-0.5,beta_loc0[1]+1,step=0.01)
+# Lik = np.zeros(len(Coef))
+# for idx, coef in enumerate(Coef):
+#     Lik[idx] = test(coef)
+# plt.plot(Coef, Lik, color='black', linestyle='solid')
+# plt.axvline(beta_loc0[1], color='r', linestyle='--');
+
         
 # X_s = (R**phi)*utils.norm_to_Pareto(Z) 
 # def test(tau_sqd):
@@ -692,10 +732,29 @@ if __name__ == "__main__":
 #                     prob_below, prob_above, Loc, Scale, Shape, 
 #                     phi, gamma, xp, surv_p, den_p)
 
-# Tau = np.arange(1000,2000,step=50)
+# Tau = np.arange(1000,10000,step=90)
 # Lik = np.zeros(len(Tau))
 # for idx, t in enumerate(Tau):
 #     Lik[idx] = test(t) 
 # plt.plot(Tau, Lik, color='black', linestyle='solid')
 # plt.axvline(tau_sqd, color='r', linestyle='--');   
     
+# def test(x):
+#     return utils.theta_c_update_mixture_me_likelihood(Z, np.array([x,1.5]), Dist)
+
+# Range = np.arange(range-0.02,range+0.1,step=0.01)
+# Lik = np.zeros(len(Range))
+# for idx, r in enumerate(Range):
+#     Lik[idx] = test(r) 
+# plt.plot(Range, Lik, color='black', linestyle='solid')
+# plt.axvline(range, color='r', linestyle='--');
+
+# def test(x):
+#     return utils.theta_c_update_mixture_me_likelihood(Z, np.array([range,x]), Dist)
+
+# Nu = np.arange(0.9,1.8,step=0.01)
+# Lik = np.zeros(len(Nu))
+# for idx, r in enumerate(Nu):
+#     Lik[idx] = test(r) 
+# plt.plot(Nu, Lik, color='black', linestyle='solid')
+# plt.axvline(nu, color='r', linestyle='--');
