@@ -470,7 +470,7 @@ if __name__ == "__main__":
                                 tau_sqd, phi, gamma, Loc, Scale, Time, xp, surv_p, den_p, 
                                 thresh_X, thresh_X_above)
             beta_shape_accept = beta_shape_accept + Metr_beta_shape['acc_prob']
-            beta_shape = np.array([Metr_beta_shape['trace'][:,1],beta_shape[1]])
+            beta_shape = np.array([Metr_beta_shape['trace'][0,1],beta_shape[1]])
             beta_shape_trace_within_thinning[:,index_within] = beta_shape
             # shape = Design_mat1 @beta_shape
             shape = Design_mat @beta_shape
