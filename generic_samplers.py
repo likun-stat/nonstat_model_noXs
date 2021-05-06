@@ -68,7 +68,7 @@ def static_metr(z, starting_theta, likelihood_fn,
     # Begin main loop
     for i in np.arange(1,n_updates):
         theta_star = theta + sigma_m * random_generator.standard_normal(p) @ prop_C
-        # cat(theta_star,hyper_params,"\n")
+        # print(str(theta_star)+', '+str(hyper_params))
         prior_star = prior_fn(theta_star, hyper_params)
         if prior_star != -np.inf:
                 likelihood_star = likelihood_fn(z, theta_star, *argv)

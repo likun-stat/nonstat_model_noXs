@@ -1135,7 +1135,7 @@ def loc0_interc_gev_update_mixture_me_likelihood(data, params, beta_loc0_1, Y, X
   ## Design_mat = data
   ## For the time being, assume that the intercept, slope are CONSTANTS
   beta_loc0_0 = params
-  beta_loc0 = np.array([beta_loc0_0,beta_loc0_1])
+  beta_loc0 = np.r_[beta_loc0_0,beta_loc0_1]
   loc0 = data@beta_loc0  # mu = Xb
   
   if len(X_s.shape)==1:
@@ -1272,7 +1272,7 @@ def scale_interc_gev_update_mixture_me_likelihood(data, params, beta_scale_1, Y,
   ## Design_mat = data
   ## For the time being, assume that the intercept, slope are CONSTANTS
   beta_scale_0 = params
-  beta_scale = np.array([beta_scale_0,beta_scale_1])
+  beta_scale = np.r_[beta_scale_0,beta_scale_1]
   scale = data@beta_scale  # mu = Xb
   if np.any(scale < 0):
       return -np.inf
@@ -1374,7 +1374,7 @@ def shape_interc_gev_update_mixture_me_likelihood(data, params, beta_shape_1, Y,
   ## Design_mat = data
   ## For the time being, assume that the intercept, slope are CONSTANTS
   beta_shape_0 = params
-  beta_shape = np.array([beta_shape_0,beta_shape_1])
+  beta_shape = np.r_[beta_shape_0,beta_shape_1]
   shape = data@beta_shape  # mu = Xb
   
   if len(X_s.shape)==1:
