@@ -706,8 +706,10 @@ def corr_fn(r, theta):
     range = theta[0]
     nu = theta[1]
     part1 = 2 ** (1 - nu) / sc.gamma(nu)
-    part2 = (np.sqrt(2 * nu) * r / range) ** nu
-    part3 = sc.kv(nu, np.sqrt(2 * nu) * r / range)
+    part2 = (r / range) ** nu
+    part3 = sc.kv(nu, r / range)
+    # part2 = (np.sqrt(2 * nu) * r / range) ** nu
+    # part3 = sc.kv(nu, np.sqrt(2 * nu) * r / range)
     return part1 * part2 * part3
 ## -------------------------------------------------------------------------- ##
 

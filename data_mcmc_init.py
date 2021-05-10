@@ -797,7 +797,7 @@ if __name__ == "__main__":
 # def test(x):
 #     return utils.theta_c_update_mixture_me_likelihood(Z, np.array([x,1.5]), Dist)
 
-# Range = np.arange(range-0.02,range+0.1,step=0.01)
+# Range = np.arange(range-0.02,range+0.04,step=0.004)
 # Lik = np.zeros(len(Range))
 # for idx, r in enumerate(Range):
 #     Lik[idx] = test(r) 
@@ -813,3 +813,66 @@ if __name__ == "__main__":
 #     Lik[idx] = test(r) 
 # plt.plot(Nu, Lik, color='black', linestyle='solid')
 # plt.axvline(nu, color='r', linestyle='--');
+
+# t_chosen = 3
+# def test(x):
+#     return utils.Rt_update_mixture_me_likelihood(Y[:,t_chosen], x, X[:,t_chosen], Z[:,t_chosen], cen[:,t_chosen], cen_above[:,t_chosen], 
+#                 prob_below, prob_above, Loc[:,t_chosen], Scale[:,t_chosen], Shape[:,t_chosen], tau_sqd, phi, gamma,
+#                 xp, surv_p, den_p, thresh_X, thresh_X_above) + priors.R_prior(x, gamma)
+
+# Rt = np.arange(R[t_chosen]-0.1,R[t_chosen]+0.1,step=0.001)
+# Lik = np.zeros(len(Rt))
+# for idx, r in enumerate(Rt):
+#     Lik[idx] = test(r) 
+# plt.plot(Rt, Lik, linestyle='solid')
+# plt.axvline(R[t_chosen], color='r', linestyle='--');
+
+# from pickle import load
+# with open('local_0_progress_0.pkl', 'rb') as f:
+#      Y_tmp=load(f)
+#      cen_tmp=load(f)
+#      cen_above_tmp=load(f)
+#      initial_values_tmp=load(f)
+#      sigma_m=load(f)
+#      prop_sigma=load(f)
+#      iter_tmp=load(f)
+#      phi_trace_tmp=load(f)
+#      tau_sqd_trace=load(f)
+#      theta_c_trace_tmp=load(f)
+#      beta_loc0_trace_tmp=load(f)
+#      beta_loc1_trace_tmp=load(f)
+#      beta_scale_trace_tmp=load(f)
+#      beta_shape_trace_tmp=load(f)
+                   
+#      Z_1t_trace=load(f)
+#      R_1t_trace=load(f)
+#      Y_onetime=load(f)
+#      X_onetime=load(f)
+#      X_s_onetime=load(f)
+#      R_onetime=load(f)
+#      Z_onetime=load(f)
+    
+# plt.plot(R_1t_trace[:],linestyle='solid')
+# plt.hlines(data_all['R_at_knots'][0,0], 0, n_updates_thinned, colors='r', linestyles='--');
+
+
+
+# from pickle import load
+# with open('local_0_progress_3.pkl', 'rb') as f:
+#      Y_tmp=load(f)
+#      cen_tmp=load(f)
+#      cen_above_tmp=load(f)
+#      # initial_values_tmp=load(f)
+#      sigma_m=load(f)
+#      # prop_sigma=load(f)
+#      iter_tmp=load(f)
+#      Z_1t_trace=load(f)
+#      R_1t_trace=load(f)
+#      Y_onetime=load(f)
+#      X_onetime=load(f)
+#      X_s_onetime=load(f)
+#      R_onetime=load(f)
+#      Z_onetime=load(f)
+    
+# plt.plot(R_1t_trace[:],linestyle='solid')
+# plt.hlines(data_all['R_at_knots'][0,3], 0, n_updates_thinned, colors='r', linestyles='--');
