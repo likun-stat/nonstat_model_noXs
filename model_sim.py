@@ -703,7 +703,8 @@ def corr_fn(r, theta):
       sys.exit('Distance argument must be nonnegative.')
     r[r == 0] = 1e-10
 
-    range = theta[0]
+    # range = theta[0]
+    range = np.sqrt(theta[0])  # Mark's generic Matern
     nu = theta[1]
     part1 = 2 ** (1 - nu) / sc.gamma(nu)
     part2 = (r / range) ** nu
@@ -1155,15 +1156,9 @@ def loc0_interc_gev_update_mixture_me_likelihood(data, params, beta_loc0_1, Y, X
   
   # If the parameters imply support that is not consistent with the data,
   # then reject the parameters.
-  if np.any(Y > max_support) or np.min(tmp)<prob_below-0.05 or np.max(tmp)>prob_above+0.05:
+  if np.any(Y > max_support) or np.min(tmp)< prob_below-0.0005 or np.max(tmp)>prob_above:
       return -np.inf
   
-  # cen = which_censored(Y, Loc, Scale, Shape, prob_below) # 'cen' isn't altered in Global
-  # cen_above = ~which_censored(Y, Loc, Scale, Shape, prob_above)
-  
-  ## What if GEV params are such that all Y's are censored?
-  if np.all(cen):
-      return -np.inf
   
   X = X_update(Y, cen, cen_above, xp, surv_p, tau_sqd, phi, gamma, Loc, Scale, Shape)
   ll = marg_transform_data_mixture_me_likelihood(Y, X, X_s, cen, cen_above, prob_below, prob_above, Loc, Scale, Shape, 
@@ -1294,14 +1289,7 @@ def scale_interc_gev_update_mixture_me_likelihood(data, params, beta_scale_1, Y,
   
   # If the parameters imply support that is not consistent with the data,
   # then reject the parameters.
-  if np.any(Y > max_support) or np.min(tmp)<prob_below-0.05 or np.max(tmp)>prob_above+0.05:
-      return -np.inf
-  
-  # cen = which_censored(Y, Loc, Scale, Shape, prob_below) # 'cen' isn't altered in Global
-  # cen_above = ~which_censored(Y, Loc, Scale, Shape, prob_above)
-
-  ## What if GEV params are such that all Y's are censored?
-  if(np.all(cen)):
+  if np.any(Y > max_support) or np.min(tmp)<prob_below-0.0005 or np.max(tmp)>prob_above:
       return -np.inf
   
   X = X_update(Y, cen, cen_above, xp, surv_p, tau_sqd, phi, gamma, Loc, Scale, Shape)
@@ -1394,15 +1382,9 @@ def shape_interc_gev_update_mixture_me_likelihood(data, params, beta_shape_1, Y,
   
   # If the parameters imply support that is not consistent with the data,
   # then reject the parameters.
-  if np.any(Y > max_support) or np.min(tmp)<prob_below-0.05 or np.max(tmp)>prob_above+0.05:
+  if np.any(Y > max_support) or np.min(tmp)<prob_below or np.max(tmp)>prob_above:
       return -np.inf
   
-  # cen = which_censored(Y, Loc, Scale, Shape, prob_below) # 'cen' isn't altered in Global
-  # cen_above = ~which_censored(Y, Loc, Scale, Shape, prob_above)
-
-  ## What if GEV params are such that all Y's are censored?
-  if(np.all(cen)):
-      return -np.inf
   
   X = X_update(Y, cen, cen_above, xp, surv_p, tau_sqd, phi, gamma, Loc, Scale, Shape)
   ll = marg_transform_data_mixture_me_likelihood(Y, X, X_s, cen, cen_above, prob_below, prob_above, Loc, Scale, Shape, 

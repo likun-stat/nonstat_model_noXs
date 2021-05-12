@@ -741,18 +741,18 @@ if __name__ == "__main__":
     
     
 # import matplotlib.pyplot as plt
-# def test(phi):
-#     return utils.phi_update_mixture_me_likelihood(Y, phi, R, Z, cen, cen_above, prob_below, prob_above, Loc, Scale, Shape, 
-#                         tau_sqd, gamma)
+def test(phi):
+    return utils.phi_update_mixture_me_likelihood(Y, phi, R, Z, cen, cen_above, prob_below, prob_above, Loc, Scale, Shape, 
+                        tau_sqd, gamma)
 
-# Phi = np.arange(phi-0.1,phi+0.005,step=0.001)
-# Lik = np.zeros(len(Phi))
-# for idx, phi_tmp in enumerate(Phi):
-#     Lik[idx] = test(phi_tmp)
-# plt.plot(Phi, Lik, color='black', linestyle='solid')
-# plt.axvline(phi, color='r', linestyle='--');
+Phi = np.arange(phi-0.01,phi+0.005,step=0.001)
+Lik = np.zeros(len(Phi))
+for idx, phi_tmp in enumerate(Phi):
+    Lik[idx] = test(phi_tmp)
+plt.plot(Phi, Lik, color='black', linestyle='solid')
+plt.axvline(phi, color='r', linestyle='--');
 
-# X_s = (R**phi)*utils.norm_to_Pareto(Z)
+# # X_s = (R**phi)*utils.norm_to_Pareto(Z)
 # def test(x):
 #     return utils.loc0_gev_update_mixture_me_likelihood(Design_mat, np.array([x,beta_loc0[1]]), Y, X_s, cen, cen_above, prob_below, prob_above, 
 #                       tau_sqd, phi, gamma, loc1, Scale, Shape, Time, xp, surv_p, den_p, 
@@ -780,7 +780,48 @@ if __name__ == "__main__":
 # plt.plot(Coef, Lik, color='black', linestyle='solid')
 # plt.axvline(beta_loc0[1], color='r', linestyle='--');
 
-        
+# def test(x):
+#     return utils.loc0_interc_gev_update_mixture_me_likelihood(Design_mat, x, beta_loc0[1], Y, X_s, cen, cen_above, prob_below, prob_above, 
+#                       tau_sqd, phi, gamma, loc1, Scale, Shape, Time, xp, surv_p, den_p, 
+#                       thresh_X, thresh_X_above)
+
+
+# Coef = np.arange(beta_loc0[0]-0.01,beta_loc0[0]+0.01,step=0.001)
+# Lik = np.zeros(len(Coef))
+# for idx, coef in enumerate(Coef):
+#     Lik[idx] = test(coef)
+# plt.plot(Coef, Lik, color='black', linestyle='solid')
+# plt.axvline(beta_loc0[0], color='r', linestyle='--');
+   
+# def test(x):
+#     return utils.scale_interc_gev_update_mixture_me_likelihood(Design_mat, x, beta_scale[1], Y, X_s, cen, cen_above, prob_below, prob_above, 
+#                       tau_sqd, phi, gamma, Loc, Shape, Time, xp, surv_p, den_p, 
+#                       thresh_X, thresh_X_above)
+
+
+# Coef = np.arange(beta_scale[0]-0.01,beta_scale[0]+0.01,step=0.001)
+# Lik = np.zeros(len(Coef))
+# for idx, coef in enumerate(Coef):
+#     Lik[idx] = test(coef)
+# plt.plot(Coef, Lik, color='black', linestyle='solid')
+# plt.axvline(beta_scale[0], color='r', linestyle='--');
+
+# def test(x):
+#     return utils.shape_interc_gev_update_mixture_me_likelihood(Design_mat, x, beta_shape[1], Y, X_s, cen, cen_above, prob_below, prob_above, 
+#                       tau_sqd, phi, gamma, Loc, Scale, Time, xp, surv_p, den_p, 
+#                       thresh_X, thresh_X_above)
+
+# # def test(x):
+# #     return np.sum(utils.dgev(Y[~cen & ~cen_above],20,1,x,log=True))
+
+# Coef = np.arange(beta_shape[0]-0.01,beta_shape[0]+0.01,step=0.001)
+# Lik = np.zeros(len(Coef))
+# for idx, coef in enumerate(Coef):
+#     Lik[idx] = test(coef)
+# plt.plot(Coef, Lik, color='black', linestyle='solid')
+# plt.axvline(beta_shape[0], color='r', linestyle='--');
+
+     
 # X_s = (R**phi)*utils.norm_to_Pareto(Z) 
 # def test(tau_sqd):
 #     return utils.tau_update_mixture_me_likelihood(Y, tau_sqd, X_s, cen, cen_above, 
@@ -794,15 +835,15 @@ if __name__ == "__main__":
 # plt.plot(Tau, Lik, color='black', linestyle='solid')
 # plt.axvline(tau_sqd, color='r', linestyle='--');   
     
-# def test(x):
-#     return utils.theta_c_update_mixture_me_likelihood(Z, np.array([x,1.5]), Dist)
+def test(x):
+    return utils.theta_c_update_mixture_me_likelihood(Z, np.array([x,1.5]), Dist)
 
-# Range = np.arange(range-0.02,range+0.04,step=0.004)
-# Lik = np.zeros(len(Range))
-# for idx, r in enumerate(Range):
-#     Lik[idx] = test(r) 
-# plt.plot(Range, Lik, color='black', linestyle='solid')
-# plt.axvline(range, color='r', linestyle='--');
+Range = np.arange(range-0.02,range+0.04,step=0.004)
+Lik = np.zeros(len(Range))
+for idx, r in enumerate(Range):
+    Lik[idx] = test(r) 
+plt.plot(Range, Lik, color='black', linestyle='solid')
+plt.axvline(range, color='r', linestyle='--');
 
 # def test(x):
 #     return utils.theta_c_update_mixture_me_likelihood(Z, np.array([range,x]), Dist)
@@ -827,35 +868,35 @@ if __name__ == "__main__":
 # plt.plot(Rt, Lik, linestyle='solid')
 # plt.axvline(R[t_chosen], color='r', linestyle='--');
 
-# from pickle import load
-# with open('local_0_progress_0.pkl', 'rb') as f:
-#      Y_tmp=load(f)
-#      cen_tmp=load(f)
-#      cen_above_tmp=load(f)
-#      initial_values_tmp=load(f)
-#      sigma_m=load(f)
-#      prop_sigma=load(f)
-#      iter_tmp=load(f)
-#      phi_trace_tmp=load(f)
-#      tau_sqd_trace=load(f)
-#      theta_c_trace_tmp=load(f)
-#      beta_loc0_trace_tmp=load(f)
-#      beta_loc1_trace_tmp=load(f)
-#      beta_scale_trace_tmp=load(f)
-#      beta_shape_trace_tmp=load(f)
+from pickle import load
+with open('local_0_progress_0.pkl', 'rb') as f:
+      Y_tmp=load(f)
+      cen_tmp=load(f)
+      cen_above_tmp=load(f)
+      initial_values_tmp=load(f)
+      sigma_m=load(f)
+      prop_sigma=load(f)
+      iter_tmp=load(f)
+      phi_trace_tmp=load(f)
+      tau_sqd_trace=load(f)
+      theta_c_trace_tmp=load(f)
+      beta_loc0_trace_tmp=load(f)
+      beta_loc1_trace_tmp=load(f)
+      beta_scale_trace_tmp=load(f)
+      beta_shape_trace_tmp=load(f)
                    
-#      Z_1t_trace=load(f)
-#      R_1t_trace=load(f)
-#      Y_onetime=load(f)
-#      X_onetime=load(f)
-#      X_s_onetime=load(f)
-#      R_onetime=load(f)
-#      Z_onetime=load(f)
+      Z_1t_trace=load(f)
+      R_1t_trace=load(f)
+      Y_onetime=load(f)
+      X_onetime=load(f)
+      X_s_onetime=load(f)
+      R_onetime=load(f)
+      Z_onetime=load(f)
     
-# plt.plot(R_1t_trace[:],linestyle='solid')
-# plt.hlines(data_all['R_at_knots'][0,0], 0, n_updates_thinned, colors='r', linestyles='--');
+plt.plot(R_1t_trace[:],linestyle='solid')
+plt.hlines(data_all['R_at_knots'][0,0], 0, n_updates_thinned, colors='r', linestyles='--');
 
-
+plt.plot(beta_loc0_trace_tmp[0,1000:],linestyle='solid')
 
 # from pickle import load
 # with open('local_0_progress_3.pkl', 'rb') as f:
