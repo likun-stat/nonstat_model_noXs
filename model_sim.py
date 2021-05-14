@@ -1156,7 +1156,7 @@ def loc0_interc_gev_update_mixture_me_likelihood(data, params, beta_loc0_1, Y, X
   
   # If the parameters imply support that is not consistent with the data,
   # then reject the parameters.
-  if np.any(Y > max_support) or np.min(tmp)< prob_below-0.0005 or np.max(tmp)>prob_above:
+  if np.any(Y > max_support) or np.min(tmp)< prob_below or np.max(tmp)>prob_above:
       return -np.inf
   
   
@@ -1289,7 +1289,7 @@ def scale_interc_gev_update_mixture_me_likelihood(data, params, beta_scale_1, Y,
   
   # If the parameters imply support that is not consistent with the data,
   # then reject the parameters.
-  if np.any(Y > max_support) or np.min(tmp)<prob_below-0.0005 or np.max(tmp)>prob_above:
+  if np.any(Y > max_support) or np.min(tmp)<prob_below or np.max(tmp)>prob_above:
       return -np.inf
   
   X = X_update(Y, cen, cen_above, xp, surv_p, tau_sqd, phi, gamma, Loc, Scale, Shape)

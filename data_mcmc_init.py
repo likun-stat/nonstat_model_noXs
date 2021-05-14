@@ -741,16 +741,16 @@ if __name__ == "__main__":
     
     
 # import matplotlib.pyplot as plt
-def test(phi):
-    return utils.phi_update_mixture_me_likelihood(Y, phi, R, Z, cen, cen_above, prob_below, prob_above, Loc, Scale, Shape, 
-                        tau_sqd, gamma)
+# def test(phi):
+#     return utils.phi_update_mixture_me_likelihood(Y, phi, R, Z, cen, cen_above, prob_below, prob_above, Loc, Scale, Shape, 
+#                         tau_sqd, gamma)
 
-Phi = np.arange(phi-0.01,phi+0.005,step=0.001)
-Lik = np.zeros(len(Phi))
-for idx, phi_tmp in enumerate(Phi):
-    Lik[idx] = test(phi_tmp)
-plt.plot(Phi, Lik, color='black', linestyle='solid')
-plt.axvline(phi, color='r', linestyle='--');
+# Phi = np.arange(phi-0.01,phi+0.005,step=0.001)
+# Lik = np.zeros(len(Phi))
+# for idx, phi_tmp in enumerate(Phi):
+#     Lik[idx] = test(phi_tmp)
+# plt.plot(Phi, Lik, color='black', linestyle='solid')
+# plt.axvline(phi, color='r', linestyle='--');
 
 # # X_s = (R**phi)*utils.norm_to_Pareto(Z)
 # def test(x):
