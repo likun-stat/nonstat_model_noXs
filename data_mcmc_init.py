@@ -162,7 +162,7 @@ if __name__ == "__main__":
     
     # 1. For current values of phi and gamma, obtain grids of survival probs and densities
     grid = utils.density_interp_grid(phi, gamma, grid_size=800)
-    xp = grid[:,0]; den_p = grid[:,1]; surv_p = grid[:,2]
+    xp = grid[0]; den_p = grid[1]; surv_p = grid[2]
     thresh_X =  utils.qRW_me_interp(prob_below, xp, surv_p, tau_sqd, phi, gamma)
     thresh_X_above =  utils.qRW_me_interp(prob_above, xp, surv_p, tau_sqd, phi, gamma)
     
@@ -340,7 +340,7 @@ if __name__ == "__main__":
             #
                
             grid = utils.density_interp_grid(phi, gamma, grid_size=800)
-            xp = grid[:,0]; den_p = grid[:,1]; surv_p = grid[:,2]
+            xp = grid[0]; den_p = grid[1]; surv_p = grid[2]
             X_s = (R**phi)*utils.norm_to_Pareto(Z)
                
             # Update tau_sqd

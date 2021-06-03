@@ -1063,7 +1063,7 @@ def marg_transform_data_mixture_me_likelihood0(Y, X, X_s, cen, prob_below, Loc, 
                 tau_sqd, phi, gamma, xp=np.nan, surv_p=np.nan, den_p=np.nan, thresh_X=np.nan):
   if np.any(np.isnan(xp)):
       grid = density_interp_grid(phi, gamma)
-      xp = grid[:,0]; den_p = grid[:,1]; surv_p = grid[:,2]
+      xp = grid[0]; den_p = grid[1]; surv_p = grid[2]
   if np.isnan(thresh_X):
      thresh_X = qRW_me_interp(prob_below, xp, surv_p, tau_sqd, phi, gamma)
   sd = np.sqrt(tau_sqd)  
@@ -1095,7 +1095,7 @@ def marg_transform_data_mixture_me_likelihood(Y, X, X_s, cen, cen_above,
                 xp=np.nan, surv_p=np.nan, den_p=np.nan, thresh_X=np.nan, thresh_X_above=np.nan):
   if np.any(np.isnan(xp)):
       grid = density_interp_grid(phi, gamma)
-      xp = grid[:,0]; den_p = grid[:,1]; surv_p = grid[:,2]
+      xp = grid[0]; den_p = grid[1]; surv_p = grid[2]
   if np.isnan(thresh_X):
      thresh_X = qRW_me_interp(prob_below, xp, surv_p, tau_sqd, phi, gamma)
      thresh_X_above = qRW_me_interp(prob_above, xp, surv_p, tau_sqd, phi, gamma)
@@ -1132,7 +1132,7 @@ def marg_transform_data_mixture_me_likelihood_uni(Y, X, X_s, cen, cen_above,
                 xp=np.nan, surv_p=np.nan, den_p=np.nan, thresh_X=np.nan, thresh_X_above=np.nan):
   if np.any(np.isnan(xp)):
       grid = density_interp_grid(phi, gamma)
-      xp = grid[:,0]; den_p = grid[:,1]; surv_p = grid[:,2]
+      xp = grid[0]; den_p = grid[1]; surv_p = grid[2]
   if np.isnan(thresh_X):
      thresh_X = qRW_me_interp(prob_below, xp, surv_p, tau_sqd, phi, gamma)
      thresh_X_above = qRW_me_interp(prob_above, xp, surv_p, tau_sqd, phi, gamma)
@@ -1180,7 +1180,7 @@ def phi_update_mixture_me_likelihood(data, params, R, Z, cen, cen_above,
       return -np.inf
   
   grid = density_interp_grid(phi, gamma)
-  xp = grid[:,0]; den_p = grid[:,1]; surv_p = grid[:,2]
+  xp = grid[0]; den_p = grid[1]; surv_p = grid[2]
   X = X_update(Y, cen, cen_above, xp, surv_p, tau_sqd, phi, gamma, Loc, Scale, Shape)
   X_s = (R**phi)*norm_to_Pareto(Z)
   
@@ -1231,7 +1231,7 @@ def phi_tau_update_mixture_me_likelihood(data, params, R, Z, cen, cen_above,
       return -np.inf
   
   grid = density_interp_grid(phi, gamma)
-  xp = grid[:,0]; den_p = grid[:,1]; surv_p = grid[:,2]
+  xp = grid[0]; den_p = grid[1]; surv_p = grid[2]
   X = X_update(Y, cen, cen_above, xp, surv_p, tau_sqd, phi, gamma, Loc, Scale, Shape)
   X_s = (R**phi)*norm_to_Pareto(Z)
   # ll = marg_transform_data_mixture_me_likelihood(Y, X, X_s, cen, prob_below, Loc, Scale, Shape, 
