@@ -22,6 +22,46 @@ from scipy.stats import genextreme
 
 
 ## integration.cpp
+## -------------------------------------------------------------------------- ##
+## -------------------------------------------------------------------------- ##
+##                        Import C++ function library
+## -------------------------------------------------------------------------- ##
+## -------------------------------------------------------------------------- ##
+##
+##
+## i.e., RW_marginal, pRW_me_interp, find_xrange_pRW_me
+##
+import os, ctypes
+
+# gcc -std=c++11 -shared -fPIC -o p_integrand.so p_integrand.cpp
+lib = ctypes.CDLL(os.path.abspath('./nonstat_model_noXs/p_integrand.so'))
+i_and_o_type = np.ctypeslib.ndpointer(ndim=1, dtype=np.float64)
+grid_type  = np.ctypeslib.ndpointer(ndim=1, dtype=np.float64)
+
+lib.pRW_me_interp_C.restype = ctypes.c_int
+lib.pRW_me_interp_C.argtypes = (i_and_o_type, grid_type, grid_type,
+                      ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int, ctypes.c_int,
+                      i_and_o_type)
+
+lib.RW_marginal_C.restype = ctypes.c_int
+lib.RW_marginal_C.argtypes = (i_and_o_type, 
+                      ctypes.c_double, ctypes.c_double, ctypes.c_int,
+                      i_and_o_type)
+
+lib.find_xrange_pRW_me_C.restype = ctypes.c_int
+lib.find_xrange_pRW_me_C.argtypes = (ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double,
+                                     grid_type, grid_type, ctypes.c_double, ctypes.c_double, ctypes.c_double, 
+                                     ctypes.c_int, i_and_o_type)
+
+lib.RW_density_C.restype = ctypes.c_int
+lib.RW_density_C.argtypes = (i_and_o_type, 
+                      ctypes.c_double, ctypes.c_double, ctypes.c_int,
+                      i_and_o_type)
+
+lib.dRW_me_interp_C.restype = ctypes.c_int
+lib.dRW_me_interp_C.argtypes = (i_and_o_type, grid_type, grid_type,
+                      ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_int, ctypes.c_int,
+                      i_and_o_type)
 
 ## -------------------------------------------------------------------------- ##
 ## -------------------------------------------------------------------------- ##
@@ -191,12 +231,15 @@ def survival_interp_grid(phi, gamma, grid_size=800):
     xp = np.concatenate((xp_1, xp_2, xp_3))
     
     xp = xp[::-1] # reverse order
-    surv_p = RW_marginal(xp, phi, gamma)
-    return np.c_[xp, surv_p]
+    xp = np.ascontiguousarray(xp, np.float64) #C contiguous order: xp.flags['C_CONTIGUOUS']=True?
+    n_xval = len(xp); surv_p = np.empty(n_xval)
+    tmp_int = lib.RW_marginal_C(xp, phi, gamma, n_xval, surv_p)
+    if tmp_int!=1: sys.exit('C implementaion failed.')
+    # surv_p = RW_marginal(xp, phi, gamma)
+    return (xp, surv_p)
 
 
 ## **** (1). Vectorize univariate function ****
-## Time: 0.08671 secs for 300 xvals.
 def pRW_me_uni_interp(xval, xp, surv_p, tau_sqd):
     tp = xval-xp
     integrand_p = np.exp(-tp**2/(2*tau_sqd)) * surv_p
@@ -210,10 +253,10 @@ def pRW_me_uni_interp(xval, xp, surv_p, tau_sqd):
 def pRW_me_interp_slower(xval, xp, surv_p, tau_sqd):
     return np.array([pRW_me_uni_interp(xval_i, xp, surv_p, tau_sqd) for xval_i in xval])
 
+
 ## **** (2). Broadcast matrices and vectorize columns ****
-## Time: 0.05108 secs for 300 xvals. Faster 2x.
-def pRW_me_interp(xval, xp, surv_p, tau_sqd, phi, gamma):
-    if(isinstance(xval, (int, np.int64, float))): xval=np.array([xval])
+def pRW_me_interp_py(xval, xp, surv_p, tau_sqd, phi, gamma):
+    if(isinstance(xval, (int, np.int64, float))): xval=np.array([xval], dtype='float64')
     tmp = np.zeros(xval.shape) # Store the results
     # Use the smooth process CDF values if tau_sqd<0.05
     if tau_sqd>0.05: 
@@ -241,7 +284,16 @@ def pRW_me_interp(xval, xp, surv_p, tau_sqd, phi, gamma):
     if(xval.size-np.sum(which)>0):
         tmp[np.invert(which)] = RW_marginal(xval[np.invert(which)],phi,gamma,survival = False)
     return tmp
-   
+
+
+## **** (3). Use the C implementation ****
+def pRW_me_interp(xval, xp, surv_p, tau_sqd, phi, gamma):
+    if(isinstance(xval, (int, np.int64, float))): xval=np.array([xval], dtype='float64')
+    n_xval = len(xval); n_grid = len(xp)
+    result = np.zeros(n_xval) # Store the results
+    tmp_int = lib.pRW_me_interp_C(xval, xp, surv_p, tau_sqd, phi, gamma, n_xval, n_grid, result)
+    if tmp_int!=1: sys.exit('C implementaion failed.')
+    return result
     
 
 # -----------  3. Define integrand in Python: linear interpolation ----------- #
@@ -257,11 +309,11 @@ def survival_interp_grid1(phi, grid_size=1000):
     
     tmp = 1/(sp**(1/phi))
     surv_p = sc.gammainc(0.5,tmp) + gammaincc_unregulized(0.5-phi,tmp)/(sp*sc.gamma(0.5))
-    return np.c_[sp, surv_p]
+    return (sp, surv_p)
 
 
 def pRW_me_interp1(xval, sp, surv_p, tau_sqd, phi, gamma):
-    if(isinstance(xval, (int, np.int64, float))): xval=np.array([xval])
+    if(isinstance(xval, (int, np.int64, float))): xval=np.array([xval], dtype='float64')
     res = np.zeros(xval.size) # Store the results
     tmp1 = (gamma/2)**phi
     # If the asymp quantile level reaches 0.98, use the smooth distribution func.
@@ -300,29 +352,33 @@ def pRW_me_interp1(xval, sp, surv_p, tau_sqd, phi, gamma):
 # X_vals = np.linspace(0.001,120,num=300)
 
 # import time
-# phi=0.7; gamma=1.2
+# phi=0.7; gamma=1.2; tau_sqd = 10
 # start_time = time.time()
 # P_vals = RW_marginal(X_vals,phi, gamma, survival = False)
 # time.time() - start_time
 
 # start_time = time.time()
-# P_mix = pRW_me(X_vals,phi,gamma,10)
+# P_mix = pRW_me(X_vals,phi,gamma,tau_sqd)
 # time.time() - start_time
 
 # grid = survival_interp_grid(phi, gamma)
-# xp = grid[:,0]; surv_p = grid[:,1]
+# xp = grid[0]; surv_p = grid[1]
 # start_time = time.time()
-# P_interp_slower = pRW_me_interp_slower(X_vals, xp, surv_p, 10)
+# P_interp_slower = pRW_me_interp_slower(X_vals, xp, surv_p, tau_sqd)
 # time.time() - start_time
 
 # start_time = time.time()
-# P_interp = pRW_me_interp(X_vals, xp, surv_p, 10, phi, gamma)
+# P_interp_py = pRW_me_interp_py(X_vals, xp, surv_p, tau_sqd, phi, gamma)
+# time.time() - start_time
+
+# start_time = time.time()
+# P_interp = pRW_me_interp(X_vals, xp, surv_p, tau_sqd, phi, gamma)
 # time.time() - start_time
 
 # grid = survival_interp_grid1(phi)
-# sp = grid[:,0]; surv_p1 = grid[:,1]
+# sp = grid[0]; surv_p1 = grid[1]
 # start_time = time.time()
-# P_interp1 = pRW_me_interp1(X_vals, sp, surv_p1, 10, phi, gamma)
+# P_interp1 = pRW_me_interp1(X_vals, sp, surv_p1, tau_sqd, phi, gamma)
 # time.time() - start_time
 
 
@@ -330,22 +386,23 @@ def pRW_me_interp1(xval, sp, surv_p, tau_sqd, phi, gamma):
 # ax.plot(X_vals, P_vals, 'b', label="Smooth R^phi*W")
 # ax.plot(X_vals, P_mix, 'r',linestyle='--', label="With nugget: numerical int")
 # ax.plot(X_vals, P_interp_slower, 'g',linestyle=':', label="With nugget: Linear interp 1")
-# ax.plot(X_vals, P_interp, 'y',linestyle='-.', label="With nugget: Linear interp 2")
+# ax.plot(X_vals, P_interp_py, 'm',linestyle=':', label="With nugget: Linear interp 2")
+# ax.plot(X_vals, P_interp, 'y',linestyle='-.', label="With nugget: Linear interp 2 in C++")
 # ax.plot(X_vals, P_interp1, 'c',linestyle='-.', label="With nugget: Linear interp w/o gamma")
 # # ax.scatter(86.50499743, 0.9, c='red')
 # # ax.scatter(1.11750005, 0.19, c='red')
 # legend = ax.legend(loc = "lower right",shadow=True)
 # plt.show()
-## ----- Compared to 0.02579 secs for 300 values when using pmixture_me() --- ##
-# --------------------------------------------------------------------------
-# --------------------------------------------------------------------------
-#|  RW_marginal |    pRW_me    | pRW_me_interp_slower  |   pRW_me_interp   |
-# --------------------------------------------------------------------------
-#|   smooth RW  |  exact marg  |  interp w/ vectorize  |interp w/ broadcast|
-# --------------------------------------------------------------------------
-#| 0.00274 secs | 0.45508 secs |      0.08671 secs     |    0.05108 secs   |
-# --------------------------------------------------------------------------
-## -------------------------------------------------------------------------- ##
+## ----- Compared to 0.02579 secs for 1000 values when using pmixture_me() --- ##
+# ---------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------
+#|  RW_marginal |    pRW_me    | pRW_me_interp_slower  |   pRW_me_interp_py   | pRW_me_interp
+# ---------------------------------------------------------------------------------------------
+#|   smooth RW  |  exact marg  |  interp w/ vectorize  |  interp w/ broadcast | interp in C++
+# ---------------------------------------------------------------------------------------------
+#| 0.02799 secs | 4.85512 secs |      0.25337 secs     |      0.05140 secs    |  0.01389 secs
+# ---------------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------------------- ##
 
 
 
@@ -372,17 +429,17 @@ def find_xrange_pRW_me(min_p, max_p, x_init, xp, surv_p, tau_sqd, phi, gamma):
         sys.exit('x_init[0] must be smaller than x_init[1].')
     
     ## First the min
-    p_min_x = pRW_me_interp(min_x, xp, surv_p, tau_sqd, phi, gamma)
+    p_min_x = pRW_me_interp_py(min_x, xp, surv_p, tau_sqd, phi, gamma)
     while p_min_x > min_p:
         min_x = min_x-40/phi
-        p_min_x = pRW_me_interp(min_x, xp, surv_p, tau_sqd, phi, gamma)
+        p_min_x = pRW_me_interp_py(min_x, xp, surv_p, tau_sqd, phi, gamma)
     x_range[0] = min_x
     
     ## Now the max
-    p_max_x = pRW_me_interp(max_x, xp, surv_p, tau_sqd, phi, gamma)
+    p_max_x = pRW_me_interp_py(max_x, xp, surv_p, tau_sqd, phi, gamma)
     while p_max_x < max_p:
         max_x = max_x*2 # Upper will set to 20 initially
-        p_max_x = pRW_me_interp(max_x, xp, surv_p, tau_sqd, phi, gamma)
+        p_max_x = pRW_me_interp_py(max_x, xp, surv_p, tau_sqd, phi, gamma)
     x_range[1] = max_x
     return x_range
 
@@ -394,7 +451,7 @@ import sklearn.isotonic
 # cdf_gbdt = HistGradientBoostingRegressor(monotonic_cst=[1]).fit(x_vals_tmp, cdf_vals)
 # cdf_vals_1 = cdf_gbdt.predict(x_vals_tmp)
 
-def qRW_me_interp(p, xp, surv_p, tau_sqd, phi, gamma, 
+def qRW_me_interp_py(p, xp, surv_p, tau_sqd, phi, gamma, 
            cdf_vals = np.nan, x_vals = np.nan, n_x=400, lower=5, upper=20):
     if(isinstance(p, (int, np.int64, float))): p=np.array([p])
     large_delta_large_x = False
@@ -409,10 +466,10 @@ def qRW_me_interp(p, xp, surv_p, tau_sqd, phi, gamma,
                            np.exp(np.linspace(np.log(0.0001001), np.log(x_range[1]), num=n_x))))
         else:
             x_vals = np.exp(np.linspace(np.log(x_range[0]), np.log(x_range[1]), num=n_x))
-        cdf_vals = pRW_me_interp(x_vals, xp, surv_p, tau_sqd, phi, gamma)
+        cdf_vals = pRW_me_interp_py(x_vals, xp, surv_p, tau_sqd, phi, gamma)
     else:
         if np.any(np.isnan(cdf_vals)):
-            cdf_vals = pRW_me_interp(x_vals, xp, surv_p, tau_sqd, phi, gamma)
+            cdf_vals = pRW_me_interp_py(x_vals, xp, surv_p, tau_sqd, phi, gamma)
     
     # Obtain the quantile level using the interpolated function
     if not large_delta_large_x:
@@ -435,7 +492,60 @@ def qRW_me_interp(p, xp, surv_p, tau_sqd, phi, gamma,
             tck = interp.pchip(cdf_vals, x_vals)
             q_vals[~which] = tck(p[~which])  
     return q_vals
+
+
+# Same function implemented in C++
+def qRW_me_interp(p, xp, surv_p, tau_sqd, phi, gamma, 
+           cdf_vals = np.nan, x_vals = np.nan, n_x=400, lower=5, upper=20):
+    if(isinstance(p, (int, np.int64, float))): p=np.array([p])
+    large_delta_large_x = False
+    # (1) When phi is varying over space, we need to calculate one quantile for each phi value.
+    # Given more accuarte [lower,upper] values for the single p, we can decrease n_x.
+    if(len(p)==1): n_x=np.int(100*(p+0.1))
     
+    # (2) Generate x_vals and cdf_vals to interpolate
+    if np.any(np.isnan(x_vals)):
+        x_range = np.empty(2); n_grid = len(xp)
+        tmp_int = lib.find_xrange_pRW_me_C(np.min(p), np.max(p), lower, upper, 
+                                     xp, surv_p, tau_sqd, phi, gamma, n_grid, x_range)
+        if tmp_int!=1: sys.exit('C implementaion failed.')
+        if np.isinf(x_range[1]): # Upper is set to 20 initially
+            x_range[1] = 10^20; large_delta_large_x = True
+        if np.any(x_range<=0):
+            x_vals = np.concatenate((np.linspace(x_range[0], 0.0001, num=150),
+                           np.exp(np.linspace(np.log(0.0001001), np.log(x_range[1]), num=n_x))))
+        else:
+            x_vals = np.exp(np.linspace(np.log(x_range[0]), np.log(x_range[1]), num=n_x))
+        cdf_vals = pRW_me_interp(x_vals, xp, surv_p, tau_sqd, phi, gamma)
+    else:
+        if np.any(np.isnan(cdf_vals)):
+            cdf_vals = pRW_me_interp(x_vals, xp, surv_p, tau_sqd, phi, gamma)
+    
+    # (3) Obtain the quantile level using the interpolated function
+    if not large_delta_large_x:
+        zeros = sum(cdf_vals==0)
+        try:
+            tck = interp.pchip(cdf_vals[zeros:], x_vals[zeros:]) # 1-D monotonic cubic interpolation.
+        except ValueError:
+            ir = sklearn.isotonic.IsotonicRegression(increasing=True)
+            ir.fit(x_vals[zeros:], cdf_vals[zeros:])
+            cdf_vals_1 = ir.predict(x_vals[zeros:])
+            indices = np.where(np.diff(cdf_vals_1)==0)[0]+1
+            tck = interp.pchip(np.delete(cdf_vals_1,indices), np.delete(x_vals[zeros:],indices))
+        q_vals = tck(p)
+    else:
+        which = p>cdf_vals[-1]
+        q_vals = np.repeat(np.nan, np.shape(p)[0])
+        q_vals[which] = x_range[1]
+        if np.any(~which):
+            # tck = interp.interp1d(cdf_vals, x_vals, kind = 'cubic')
+            tck = interp.pchip(cdf_vals, x_vals)
+            q_vals[~which] = tck(p[~which])  
+    return q_vals
+
+
+
+
     
 # ---------------------------  2. Use Scipy: Slower -------------------------- #
 ## Slow especially for phi>1.5
@@ -457,20 +567,25 @@ def qRW_me_optim(p, xp, surv_p, tau_sqd, phi, gamma):
 # import matplotlib.pyplot as plt
 # phi=0.7; gamma=1.2; tau_sqd = 10
 # grid = survival_interp_grid(phi, gamma)
-# xp = grid[:,0]; surv_p = grid[:,1]
+# xp = grid[0]; surv_p = grid[1]
 # P_vals = np.linspace(0.001,0.99,num=300)
 
 # import time
 # start_time = time.time()
-# Q_interp = qRW_me_interp(P_vals, xp, surv_p, tau_sqd, phi, gamma) #0.09542 secs
+# Q_interp_py = qRW_me_interp_py(P_vals, xp, surv_p, tau_sqd, phi, gamma) #0.02546 secs
 # time.time() - start_time
 
 # start_time = time.time()
-# Q_optim = qRW_me_optim(P_vals, xp, surv_p, tau_sqd, phi, gamma) # 5.00785 secs
+# Q_interp = qRW_me_interp(P_vals, xp, surv_p, tau_sqd, phi, gamma) #0.00863 secs
+# time.time() - start_time
+
+# start_time = time.time()
+# Q_optim = qRW_me_optim(P_vals, xp, surv_p, tau_sqd, phi, gamma) # 0.99205 secs
 # time.time() - start_time
 
 # fig, ax = plt.subplots()
-# ax.plot(Q_interp, P_vals, 'b', label="Ben's interp method")
+# ax.plot(Q_interp_py, P_vals, 'b', label="Ben's interp method")
+# ax.plot(Q_interp, P_vals, 'b', label="Ben's interp method in C++")
 # ax.plot(Q_optim, P_vals, 'r',linestyle='--', label="Scipy's optim")
 # legend = ax.legend(loc = "lower right",shadow=True)
 # plt.show()  
@@ -572,9 +687,15 @@ def density_interp_grid(phi, gamma, grid_size=800):
     xp = np.concatenate((xp_1, xp_2, xp_3))
     
     xp = xp[::-1] # reverse order
-    den_p = RW_density(xp, phi, gamma, log=False)
-    surv_p = RW_marginal(xp, phi, gamma)
-    return np.c_[xp, den_p, surv_p]
+    xp = np.ascontiguousarray(xp, np.float64) #C contiguous order: xp.flags['C_CONTIGUOUS']=True?
+    n_xval = len(xp); den_p = np.empty(n_xval); surv_p = np.empty(n_xval)
+    tmp_int = lib.RW_density_C(xp, phi, gamma, n_xval, den_p) # density
+    if tmp_int!=1: sys.exit('C implementaion failed.')
+    tmp_int = lib.RW_marginal_C(xp, phi, gamma, n_xval, surv_p) #cdf
+    if tmp_int!=1: sys.exit('C implementaion failed.')
+    # den_p = RW_density(xp, phi, gamma, log=False)
+    # surv_p = RW_marginal(xp, phi, gamma)
+    return (xp, den_p, surv_p)
 
 
 ## **** (1). Vectorize univariate function ****
@@ -594,8 +715,8 @@ def dRW_me_interp_slower(xval, xp, den_p, tau_sqd):
 
 ## **** (2). Broadcast matrices and vectorize columns ****
 ## Time: 0.05625 secs for 300 xvals. Faster 2x.
-def dRW_me_interp(xval, xp, den_p, tau_sqd, phi, gamma, log =False):
-    if(isinstance(xval, (int, np.int64, float))): xval=np.array([xval])
+def dRW_me_interp_py(xval, xp, den_p, tau_sqd, phi, gamma, log =False):
+    if(isinstance(xval, (int, np.int64, float))): xval=np.array([xval], dtype='float64')
     tmp = np.zeros(xval.size) # Store the results
     thresh_large=820
     if(tau_sqd<1): thresh_large = 50
@@ -632,49 +753,67 @@ def dRW_me_interp(xval, xp, den_p, tau_sqd, phi, gamma, log =False):
    
 
 
+## **** (3). Use the C implementation ****
+def dRW_me_interp(xval, xp, den_p, tau_sqd, phi, gamma, log=False):
+    if(isinstance(xval, (int, np.int64, float))): xval=np.array([xval], dtype='float64')
+    n_xval = len(xval); n_grid = len(xp)
+    result = np.zeros(n_xval) # Store the results
+    tmp_int = lib.dRW_me_interp_C(xval, xp, den_p, tau_sqd, phi, gamma, n_xval, n_grid, result)
+    if tmp_int!=1: sys.exit('C implementaion failed.')
+    if log:
+        return np.log(result)
+    else:
+        return result
+
+
 # import matplotlib.pyplot as plt
 # axes = plt.gca()
 # # axes.set_ylim([0,0.125])
 # X_vals = np.linspace(0.001,100,num=300)
 
 # import time
-# phi=0.3; gamma=1.2
+# phi=0.7; gamma=1.2; tau_sqd=10
 # start_time = time.time()
 # D_vals = RW_density(X_vals,phi, gamma, log = False)
 # time.time() - start_time
 
 # start_time = time.time()
-# D_mix = dRW_me(X_vals,phi,gamma,10)
+# D_mix = dRW_me(X_vals,phi,gamma,tau_sqd)
 # time.time() - start_time
 
 # grid = density_interp_grid(phi, gamma)
-# xp = grid[:,0]; den_p = grid[:,1]
+# xp = grid[0]; den_p = grid[1]
 # start_time = time.time()
-# D_interp_slower = dRW_me_interp_slower(X_vals, xp, den_p, 10)
+# D_interp_slower = dRW_me_interp_slower(X_vals, xp, den_p, tau_sqd)
 # time.time() - start_time
 
 # start_time = time.time()
-# D_interp = dRW_me_interp(X_vals, xp, den_p, 10, phi, gamma)
+# D_interp_py = dRW_me_interp_py(X_vals, xp, den_p, tau_sqd, phi, gamma)
+# time.time() - start_time
+
+# start_time = time.time()
+# D_interp = dRW_me_interp(X_vals, xp, den_p, tau_sqd, phi, gamma)
 # time.time() - start_time
 
 # fig, ax = plt.subplots()
 # ax.plot(X_vals, D_vals, 'b', label="Smooth R^phi*W")
 # ax.plot(X_vals, D_mix, 'r',linestyle='--', label="With nugget: numerical int")
 # ax.plot(X_vals, D_interp_slower, 'g',linestyle=':', label="With nugget: Linear interp 1")
-# ax.plot(X_vals, D_interp, 'y',linestyle='-.', label="With nugget: Linear interp 2")
+# ax.plot(X_vals, D_interp_py, 'y',linestyle='-.', label="With nugget: Linear interp 2")
+# ax.plot(X_vals, D_interp, 'm',linestyle='-.', label="With nugget: Linear interp 2 in C++")
 # legend = ax.legend(loc = "upper right",shadow=True)
 # plt.title(label="phi=0.3") 
 # plt.show()
-## ----- Compared to 0.01391 secs for 300 values when using pmixture_me() --- ##
-# --------------------------------------------------------------------------
-# --------------------------------------------------------------------------
-#|  RW_density  |    dRW_me    | dRW_me_interp_slower  |   dRW_me_interp   |
-# --------------------------------------------------------------------------
-#|   smooth RW  |  exact marg  |  interp w/ vectorize  |interp w/ broadcast|
-# --------------------------------------------------------------------------
-#| 0.00249 secs | 0.32877 secs |      0.08516 secs     |    0.05625 secs   |
-# --------------------------------------------------------------------------
-## -------------------------------------------------------------------------- ##
+# # ----- Compared to 0.01391 secs for 300 values when using pmixture_me() --- ##
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# |  RW_density  |    dRW_me    | dRW_me_interp_slower  |   dRW_me_interp_py   |  dRW_me_interp  |
+# ------------------------------------------------------------------------------------------------
+# |   smooth RW  |  exact marg  |  interp w/ vectorize  | interp w/ broadcast  |  interp in C++  |
+# ------------------------------------------------------------------------------------------------
+# | 0.00423 secs | 0.80787 secs |      0.05088 secs     |     0.01348 secs     |   0.00444 secs  |
+# ------------------------------------------------------------------------------------------------
+# # ---------------------------------------------------------------------------------------------- ##
 
 
 
@@ -725,10 +864,17 @@ def corr_fn(r, theta):
 ##
 ## Assumes that A = VDV', where D is a diagonal vector of eigenvectors of A, and
 ## V is a matrix of normalized eigenvectors of A.
+
 ## Computes A^{-1}x
 ##
 def eig2inv_times_vector(V, d_inv, x):
   return V@np.diag(d_inv)@V.T@x
+
+## Computes y=A^{-1}x via solving linear system Ay=x
+from scipy.linalg import lapack
+def inv_times_vector(A, x):
+  inv = lapack.dposv(A,x)
+  return inv
 
 
 ## Assumes that A = VDV', where D is a diagonal vector of eigenvectors of A, and
@@ -755,7 +901,20 @@ def dmvn_eig(R, V, d_inv, mean=0):
   res = -0.5*n_rep*eig2logdet(1/d_inv) - 0.5 * np.sum((R-mean) * eig2inv_times_vector(V, d_inv, R-mean))
   return res
 
-
+def dmvn(R, Cor, mean=0, cholesky_inv = None):## cholesky_inv is the output of inv_times_vector()
+  if len(R.shape)==1: 
+    n_rep = 1 
+  else: 
+    n_rep = R.shape[1]
+    
+  if cholesky_inv is None: 
+      inv = lapack.dposv(Cor, R-mean)
+  else:
+      sol = lapack.dpotrs(cholesky_inv[0],R-mean) #Solve Ax = b using factorization
+      inv = (cholesky_inv[0],sol[0])
+  logdet = 2*sum(np.log(np.diag(inv[0])))
+  res = -0.5*n_rep*logdet - 0.5 * np.sum((R-mean) * inv[1])
+  return res
 
 ## Assumes that A = VDV', where D is a diagonal vector of eigenvectors of A, and
 ## V is a matrix of normalized eigenvectors of A.
@@ -764,6 +923,15 @@ def dmvn_eig(R, V, d_inv, mean=0):
 ##
 def eig2inv_quadform_vector(V, d_inv, x):
   cp = V@np.diag(d_inv)@V.T@x
+  return sum(x*cp)
+
+def inv_quadform_vector(Cor, x, cholesky_inv = None):
+  if cholesky_inv is None:
+      inv = lapack.dposv(Cor, x)
+      cp = inv[1]
+  else:
+      sol = lapack.dpotrs(cholesky_inv[0],x) #Solve Ax = b using factorization
+      cp = sol[0]
   return sum(x*cp)
 
 ## -------------------------------------------------------------------------- ##
@@ -1140,6 +1308,7 @@ def loc0_interc_gev_update_mixture_me_likelihood(data, params, beta_loc0_1, Y, X
   beta_loc0_0 = params
   beta_loc0 = np.r_[beta_loc0_0,beta_loc0_1]
   loc0 = data@beta_loc0  # mu = Xb
+  # loc0 = loc0.astype(float)
   
   if len(X_s.shape)==1:
       X_s = X_s.reshape((X_s.shape[0],1))
@@ -1411,14 +1580,19 @@ def shape_interc_gev_update_mixture_me_likelihood(data, params, beta_shape_1, Y,
 ## Both functions in this section admit column vectors only.
 ##
 
-def Z_likelihood_conditional(Z, V, d):
+def Z_likelihood_conditional_eigen(Z, V, d):
     # R_powered = R**phi
     part1 = -0.5*eig2inv_quadform_vector(V, 1/d, Z)-0.5*np.sum(np.log(d))
     return part1
 
+def Z_likelihood_conditional(Z, Cor, cholesky_inv):
+    # R_powered = R**phi
+    part1 = -0.5*inv_quadform_vector(Cor, Z, cholesky_inv)-0.5*2*sum(np.log(np.diag(cholesky_inv[0])))
+    return part1
+
 def Z_update_onetime(Y, X, R, Z, cen, cen_above, prob_below, prob_above,
                 tau_sqd, phi, gamma, Loc, Scale, Shape, xp, surv_p, den_p, 
-                thresh_X, thresh_X_above, V, d, Sigma_m, random_generator):
+                thresh_X, thresh_X_above, Cor, cholesky_inv, Sigma_m, random_generator):
     
     n_s = X.size
     prop_Z = np.empty(X.shape)
@@ -1437,10 +1611,10 @@ def Z_update_onetime(Y, X, R, Z, cen, cen_above, prob_below, prob_above,
         
         log_num = marg_transform_data_mixture_me_likelihood_uni(Y[idx], X[idx], prop_X_s_idx, 
                        cen[idx], cen_above[idx], prob_below, prob_above, Loc[idx], Scale[idx], Shape[idx], tau_sqd, phi, gamma, 
-                       xp, surv_p, den_p, thresh_X, thresh_X_above) + Z_likelihood_conditional(prop_Z, V, d);
+                       xp, surv_p, den_p, thresh_X, thresh_X_above) + Z_likelihood_conditional(prop_Z, Cor, cholesky_inv);
         log_denom = marg_transform_data_mixture_me_likelihood_uni(Y[idx], X[idx], X_s[idx], 
                        cen[idx], cen_above[idx], prob_below, prob_above, Loc[idx], Scale[idx], Shape[idx], tau_sqd, phi, gamma, 
-                       xp, surv_p, den_p, thresh_X, thresh_X_above) + Z_likelihood_conditional(Z, V, d);
+                       xp, surv_p, den_p, thresh_X, thresh_X_above) + Z_likelihood_conditional(Z, Cor, cholesky_inv);
         
         with np.errstate(over='raise'):
             try:
@@ -1475,7 +1649,7 @@ def Z_update_onetime(Y, X, R, Z, cen, cen_above, prob_below, prob_above,
 ##
 ##
 
-def theta_c_update_mixture_me_likelihood(data, params, S, V=np.nan, d=np.nan):
+def theta_c_update_mixture_me_likelihood_eigen(data, params, S, V=np.nan, d=np.nan):
   Z = data
   range = params[0]
   nu = params[1]
@@ -1492,10 +1666,10 @@ def theta_c_update_mixture_me_likelihood(data, params, S, V=np.nan, d=np.nan):
   ll = np.empty(n_t)
   ll[:]=np.nan
   for idx in np.arange(n_t):
-    ll[idx] = Z_likelihood_conditional(Z[:,idx], V, d)
+    ll[idx] = Z_likelihood_conditional_eigen(Z[:,idx], V, d)
   return np.sum(ll)
 
-def range_update_mixture_me_likelihood(data, params, nu, S, V=np.nan, d=np.nan):
+def range_update_mixture_me_likelihood_eigen(data, params, nu, S, V=np.nan, d=np.nan):
   Z = data
   range = params
   
@@ -1512,7 +1686,44 @@ def range_update_mixture_me_likelihood(data, params, nu, S, V=np.nan, d=np.nan):
   ll = np.empty(n_t)
   ll[:]=np.nan
   for idx in np.arange(n_t):
-    ll[idx] = Z_likelihood_conditional(Z[:,idx], V, d)
+    ll[idx] = Z_likelihood_conditional_eigen(Z[:,idx], V, d)
+  return np.sum(ll)
+
+
+def theta_c_update_mixture_me_likelihood(data, params, S, Cor=None, cholesky_inv=None):
+  Z = data
+  range = params[0]
+  nu = params[1]
+  if len(Z.shape)==1:
+      Z = Z.reshape((Z.shape[0],1))
+  n_t = Z.shape[1]
+  
+  if Cor is None:
+    Cor = corr_fn(S, np.array([range,nu]))
+    cholesky_inv = lapack.dposv(Cor,Z[:,0])
+
+  ll = np.empty(n_t)
+  ll[:]=np.nan
+  for idx in np.arange(n_t):
+    ll[idx] = Z_likelihood_conditional(Z[:,idx], Cor, cholesky_inv)
+  return np.sum(ll)
+
+def range_update_mixture_me_likelihood(data, params, nu, S, Cor=None, cholesky_inv=None):
+  Z = data
+  range = params
+  
+  if len(Z.shape)==1:
+      Z = Z.reshape((Z.shape[0],1))
+  n_t = Z.shape[1]
+  
+  if Cor is None:
+    Cor = corr_fn(S, np.array([range,nu]))
+    cholesky_inv = lapack.dposv(Cor,Z[:,0])
+
+  ll = np.empty(n_t)
+  ll[:]=np.nan
+  for idx in np.arange(n_t):
+    ll[idx] = Z_likelihood_conditional(Z[:,idx], Cor, cholesky_inv)
   return np.sum(ll)
 
 ##

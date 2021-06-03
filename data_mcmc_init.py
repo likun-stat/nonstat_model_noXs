@@ -36,6 +36,7 @@ if __name__ == "__main__":
     from scipy.stats import norm 
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_pdf import PdfPages
+    from scipy.linalg import lapack
     
     # Check whether the 'mpi4py' is installed
     test_mpi = os.system("python -c 'from mpi4py import *' &> /dev/null")
@@ -197,11 +198,12 @@ if __name__ == "__main__":
     n_covariates = len(beta_loc0)
     theta_c = np.array([range,nu])
     Dist = distance.squareform(distance.pdist(Stations_local))
+    tmp_vec = np.ones(n_s)
     Cor = utils.corr_fn(Dist, theta_c)
-    eig_Cor = np.linalg.eigh(Cor) #For symmetric matrices
-    V = eig_Cor[1]
-    d = eig_Cor[0]
-    
+    # eig_Cor = np.linalg.eigh(Cor) #For symmetric matrices
+    # V = eig_Cor[1]
+    # d = eig_Cor[0]
+    cholesky_inv = lapack.dposv(Cor,tmp_vec)
     
     # 4. Process data given initial values
     # X = data_all['X'][subset_indices,:]
@@ -227,7 +229,7 @@ if __name__ == "__main__":
     for idx in np.arange(n_t):
         tmp = utils.Z_update_onetime(Y[:,idx], X[:,idx], R[idx], Z[:,idx], cen[:,idx], cen_above[:,idx], prob_below, prob_above,
                                        tau_sqd, phi, gamma, Loc[:,idx], Scale[:,idx], Shape[:,idx], xp, surv_p, den_p,
-                                       thresh_X, thresh_X_above, V, d, v_q, random_generator)
+                                       thresh_X, thresh_X_above, Cor, cholesky_inv, v_q, random_generator)
     
     
     Y_onetime = Y[:,rank]
@@ -290,7 +292,7 @@ if __name__ == "__main__":
         # Update Z
         tmp = utils.Z_update_onetime(Y_onetime, X_onetime, R_onetime, Z_onetime, cen[:,rank], cen_above[:,rank], prob_below, prob_above,
                                     tau_sqd, phi, gamma, Loc[:,rank], Scale[:,rank], Shape[:,rank], xp, surv_p, den_p,
-                                    thresh_X, thresh_X_above, V, d, sigma_m['Z_onetime'], random_generator)
+                                    thresh_X, thresh_X_above, Cor, cholesky_inv, sigma_m['Z_onetime'], random_generator)
         Z_1t_accept = Z_1t_accept + tmp
           
         # Update R
@@ -376,9 +378,10 @@ if __name__ == "__main__":
               
             if Metr_theta_c['acc_prob']>0:
                 Cor = utils.corr_fn(Dist, theta_c)
-                eig_Cor = np.linalg.eigh(Cor) #For symmetric matrices
-                V = eig_Cor[1]
-                d = eig_Cor[0]
+                # eig_Cor = np.linalg.eigh(Cor) #For symmetric matrices
+                # V = eig_Cor[1]
+                # d = eig_Cor[0]
+                cholesky_inv = lapack.dposv(Cor,tmp_vec)
                
             # Update beta_loc0
             # Metr_beta_loc0 = sampler.static_metr(Design_mat, beta_loc0, utils.loc0_gev_update_mixture_me_likelihood, 
@@ -490,8 +493,10 @@ if __name__ == "__main__":
         thresh_X = comm.bcast(thresh_X,root=0)
         thresh_X_above = comm.bcast(thresh_X_above,root=0)
         theta_c = comm.bcast(theta_c,root=0)
-        V = comm.bcast(V,root=0)
-        d = comm.bcast(d,root=0)
+        # V = comm.bcast(V,root=0)
+        # d = comm.bcast(d,root=0)
+        Cor = comm.bcast(Cor,root=0)
+        cholesky_inv = comm.bcast(cholesky_inv,root=0)
         Loc = comm.bcast(Loc,root=0)
         Scale = comm.bcast(Scale,root=0)
         Shape = comm.bcast(Shape,root=0)
@@ -835,15 +840,15 @@ if __name__ == "__main__":
 # plt.plot(Tau, Lik, color='black', linestyle='solid')
 # plt.axvline(tau_sqd, color='r', linestyle='--');   
     
-def test(x):
-    return utils.theta_c_update_mixture_me_likelihood(Z, np.array([x,1.5]), Dist)
+# def test(x):
+#     return utils.theta_c_update_mixture_me_likelihood(Z, np.array([x,1.5]), Dist)
 
-Range = np.arange(range-0.02,range+0.04,step=0.004)
-Lik = np.zeros(len(Range))
-for idx, r in enumerate(Range):
-    Lik[idx] = test(r) 
-plt.plot(Range, Lik, color='black', linestyle='solid')
-plt.axvline(range, color='r', linestyle='--');
+# Range = np.arange(range-0.02,range+0.04,step=0.004)
+# Lik = np.zeros(len(Range))
+# for idx, r in enumerate(Range):
+#     Lik[idx] = test(r) 
+# plt.plot(Range, Lik, color='black', linestyle='solid')
+# plt.axvline(range, color='r', linestyle='--');
 
 # def test(x):
 #     return utils.theta_c_update_mixture_me_likelihood(Z, np.array([range,x]), Dist)
